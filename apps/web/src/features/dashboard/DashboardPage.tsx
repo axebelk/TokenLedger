@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Col, Empty, Row, Spin, Statistic, Table, Typography } from "antd";
+import { Card, Col, Empty, Row, Spin, Statistic, Table } from "antd";
 import { useParams } from "react-router-dom";
 import {
   Area, AreaChart, CartesianGrid, Cell, Pie, PieChart,
@@ -7,8 +7,8 @@ import {
 } from "recharts";
 import { formatUsd, wsApi } from "../../api/endpoints.js";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard.js";
-
-const PALETTE = ["#3b5bdb", "#12b886", "#f59f00", "#e64980", "#7048e8", "#0ca678", "#f76707"];
+import { chartPalette, chartPrimary } from "../../app/theme.js";
+import { PageHeader } from "../../components/PageHeader.js";
 
 export function DashboardPage() {
   const { ws = "" } = useParams();
@@ -40,9 +40,7 @@ export function DashboardPage() {
 
   return (
     <div>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Last {s.rangeDays} days
-      </Typography.Title>
+      <PageHeader eyebrow="Overview" title={`Last ${s.rangeDays} days`} />
       <Row gutter={[16, 16]}>
         <Col xs={12} lg={6}><Card><Statistic title="Spend" value={formatUsd(s.costUsd, true)} /></Card></Col>
         <Col xs={12} lg={6}><Card><Statistic title="Requests" value={s.requests} /></Card></Col>
@@ -62,7 +60,7 @@ export function DashboardPage() {
                   <XAxis dataKey="date" tickLine={false} />
                   <YAxis tickFormatter={(v: number) => formatUsd(v, true)} width={70} tickLine={false} />
                   <Tooltip formatter={(v) => formatUsd(Number(v))} />
-                  <Area dataKey="cost" stroke={PALETTE[0]} fill={PALETTE[0]} fillOpacity={0.15} />
+                  <Area dataKey="cost" stroke={chartPrimary} fill={chartPrimary} fillOpacity={0.15} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -75,7 +73,7 @@ export function DashboardPage() {
                 <PieChart>
                   <Pie data={providerData} dataKey="value" nameKey="name" innerRadius={55} label={(e) => e.name}>
                     {providerData.map((_, i) => (
-                      <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                      <Cell key={i} fill={chartPalette[i % chartPalette.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => formatUsd(Number(v))} />

@@ -80,9 +80,13 @@ export interface PlatformWorkspace {
   id: string; name: string; slug: string; createdAt: string;
   members: number; projects: number; requests30d: number; costUsd30d: string;
 }
+export interface PlatformDayPoint {
+  date: string; requests: number; costUsd: string;
+}
 export const adminApi = {
   stats: () => api<PlatformStats>("/admin/stats"),
   workspaces: () => api<{ data: PlatformWorkspace[] }>("/admin/workspaces"),
+  timeseries: () => api<{ data: PlatformDayPoint[] }>("/admin/timeseries"),
 };
 
 export type Metric = "cost" | "requests" | "tokens" | "errors";
@@ -186,6 +190,8 @@ export const membersApi = {
   invitations: (ws: string) => api<{ data: Invitation[] }>(`/workspaces/${ws}/invitations`),
   invite: (ws: string, body: { email: string; role: string }) =>
     api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations`, { method: "POST", body }),
+  inviteLink: (ws: string, id: string) =>
+    api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations/${id}/link`, { method: "POST" }),
   revokeInvite: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/invitations/${id}`, { method: "DELETE" }),
 };

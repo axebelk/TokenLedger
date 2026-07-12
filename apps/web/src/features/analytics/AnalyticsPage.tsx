@@ -13,6 +13,8 @@ import {
   formatUsd, wsApi,
   type Dimension, type Granularity, type Metric, type Provider,
 } from "../../api/endpoints.js";
+import { chartPalette, chartPrimary } from "../../app/theme.js";
+import { PageHeader } from "../../components/PageHeader.js";
 
 const { RangePicker } = DatePicker;
 
@@ -33,7 +35,7 @@ const DIMENSIONS: { value: Dimension; label: string }[] = [
 const PROVIDERS: Provider[] = [
   "ANTHROPIC", "OPENAI", "GEMINI", "MINIMAX", "OPENROUTER", "DEEPSEEK", "OLLAMA",
 ];
-const PALETTE = ["#3b5bdb", "#12b886", "#f59f00", "#e64980", "#7048e8", "#0ca678", "#f76707", "#1c7ed6"];
+const PALETTE = chartPalette;
 
 export function AnalyticsPage() {
   const { ws = "" } = useParams();
@@ -119,6 +121,7 @@ export function AnalyticsPage() {
 
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="middle">
+      <PageHeader eyebrow="Analytics" title="Usage explorer" />
       <Card size="small">
         <Row gutter={[12, 12]} align="middle">
           <Col>

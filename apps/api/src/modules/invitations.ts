@@ -97,6 +97,24 @@ export function registerInvitationsModule(app: FastifyInstance, opts: Invitation
     return reply.status(201).send({ ...invitation, acceptUrl });
   });
 
+  // Re-issue a shareable link for a still-pending invitation. Because the token
+  // is stored only as a hash, the original link is unrecoverable — so we mint a
+  // fresh token (invalidating any previously shared link) and return the new URL.
+  app.post("/workspaces/:ws/invitations/:id/link", { preHandler: admin }, async (request) => {
+    const { id } = request.params as { id: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const invitation = await prisma.invitation.findFirst({
+      where: { id, workspaceId, acceptedAt: null, expiresAt: { gt: new Date() } },
+      select: { id: true, email: true, role: true, expiresAt: true },
+    });
+    if (!invitation) throw new NotFoundError("Invitation", id);
+
+    const minted = mintInviteToken();
+    await prisma.invitation.update({ where: { id }, data: { tokenHash: minted.hash } });
+    const acceptUrl = `${publicBaseUrl}/invite/${minted.token}`;
+    return { ...invitation, acceptUrl };
+  });
+
   app.delete("/workspaces/:ws/invitations/:id", { preHandler: admin }, async (request) => {
     const { id } = request.params as { id: string };
     const deleted = await prisma.invitation.deleteMany({

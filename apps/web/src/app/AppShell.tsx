@@ -18,21 +18,23 @@ export function AppShell() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider theme="dark" width={210}>
-        <div style={{ padding: 16 }}>
-          <Typography.Text strong style={{ color: "white", fontSize: 16 }}>
-            TokenTrail
-          </Typography.Text>
+      <Sider theme="light" width={224} className="tt-sider">
+        <div className="tt-brand">
+          <span className="tt-brand__mark" />
+          <span className="tt-brand__word">TokenTrail</span>
         </div>
         <Menu
-          theme="dark"
+          theme="light"
           mode="inline"
+          className="tt-sider__menu"
           selectedKeys={[section]}
           items={[
             { key: "dashboard", icon: <DashboardOutlined />, label: <Link to={`/${ws}`}>Dashboard</Link> },
             { key: "setup", icon: <RocketOutlined />, label: <Link to={`/${ws}/setup`}>Connect</Link> },
+            { type: "divider", className: "tt-menu-divider" },
             { key: "analytics", icon: <BarChartOutlined />, label: <Link to={`/${ws}/analytics`}>Analytics</Link> },
             { key: "usage", icon: <TableOutlined />, label: <Link to={`/${ws}/usage`}>Usage</Link> },
+            { type: "divider", className: "tt-menu-divider" },
             { key: "keys", icon: <KeyOutlined />, label: <Link to={`/${ws}/keys`}>Virtual Keys</Link> },
             { key: "projects", icon: <AppstoreOutlined />, label: <Link to={`/${ws}/projects`}>Projects</Link> },
             { key: "teams", icon: <UsergroupAddOutlined />, label: <Link to={`/${ws}/teams`}>Teams</Link> },
@@ -42,23 +44,20 @@ export function AppShell() {
         />
       </Sider>
       <Layout>
-        <Header
-          style={{
-            background: "white", display: "flex", alignItems: "center",
-            justifyContent: "space-between", paddingInline: 24,
-          }}
-        >
-          <Space>
-            <Typography.Text strong>{current?.workspace.name ?? ws}</Typography.Text>
-            {current && <Tag>{current.role}</Tag>}
+        <Header className="tt-topbar">
+          <Space size={10}>
+            <Typography.Text strong className="tt-topbar__title">
+              {current?.workspace.name ?? ws}
+            </Typography.Text>
+            {current && <Tag color="default">{current.role}</Tag>}
           </Space>
-          <Space>
+          <Space size={12}>
             {isSuperAdmin && (
               <Link to="/admin">
                 <Button size="small" icon={<GlobalOutlined />}>Platform</Button>
               </Link>
             )}
-            <Typography.Text type="secondary">{user?.email}</Typography.Text>
+            <Typography.Text type="secondary" className="tt-topbar__email">{user?.email}</Typography.Text>
             <Button size="small" onClick={() => void logout()}>
               Sign out
             </Button>

@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography,
+  Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
 } from "antd";
-import { UserAddOutlined } from "@ant-design/icons";
+import { LinkOutlined, UserAddOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { membersApi, type Invitation, type Member } from "../../api/endpoints.js";
 import { ApiError } from "../../api/client.js";
 import { CopyField } from "../../components/CopyField.js";
+import { PageHeader } from "../../components/PageHeader.js";
 
 const ROLE_COLORS: Record<string, string> = {
   OWNER: "gold", ADMIN: "geekblue", MEMBER: "default", VIEWER: "purple",
@@ -24,22 +25,42 @@ export function MembersPage() {
     retry: false, // non-admins get 403; don't hammer
   });
   const [inviteOpen, setInviteOpen] = useState(false);
+  // Link shown after re-issuing a share link for a pending invite.
+  const [reissued, setReissued] = useState<{ email: string; url: string } | null>(null);
 
   const revoke = useMutation({
     mutationFn: (id: string) => membersApi.revokeInvite(ws, id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: [ws, "invitations"] }),
   });
 
+  // Re-issue a fresh link and copy it straight to the clipboard. If the browser
+  // blocks the async clipboard write (lost user-gesture), fall back to a modal
+  // with a manual copy field.
+  const getLink = useMutation({
+    mutationFn: (id: string) => membersApi.inviteLink(ws, id),
+    onSuccess: async (res) => {
+      try {
+        await navigator.clipboard.writeText(res.acceptUrl);
+        void message.success(`Invite link copied for ${res.email}`);
+      } catch {
+        setReissued({ email: res.email, url: res.acceptUrl });
+      }
+    },
+    onError: () => void message.error("Couldn't generate invite link"),
+  });
+
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="large">
-      <Card
+      <PageHeader
+        eyebrow="Workspace"
         title="Members"
         extra={
           <Button type="primary" icon={<UserAddOutlined />} onClick={() => setInviteOpen(true)}>
             Invite
           </Button>
         }
-      >
+      />
+      <Card>
         <Table<Member>
           rowKey="id"
           loading={members.isLoading}
@@ -75,10 +96,21 @@ export function MembersPage() {
               },
               {
                 title: "",
+                align: "right",
                 render: (_, invite) => (
-                  <Popconfirm title="Revoke this invitation?" onConfirm={() => revoke.mutate(invite.id)}>
-                    <Button danger size="small">Revoke</Button>
-                  </Popconfirm>
+                  <Space>
+                    <Button
+                      size="small"
+                      icon={<LinkOutlined />}
+                      loading={getLink.isPending && getLink.variables === invite.id}
+                      onClick={() => getLink.mutate(invite.id)}
+                    >
+                      Copy invite link
+                    </Button>
+                    <Popconfirm title="Revoke this invitation?" onConfirm={() => revoke.mutate(invite.id)}>
+                      <Button danger size="small">Revoke</Button>
+                    </Popconfirm>
+                  </Space>
                 ),
               },
             ]}
@@ -91,10 +123,30 @@ export function MembersPage() {
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         onInvited={() => {
+          // Keep the modal open so the copyable link stays visible; the modal's
+          // own Done / Invite-another buttons handle closing.
           void queryClient.invalidateQueries({ queryKey: [ws, "invitations"] });
-          setInviteOpen(false);
         }}
       />
+
+      <Modal
+        title="Invitation link"
+        open={reissued !== null}
+        onCancel={() => setReissued(null)}
+        footer={<Button onClick={() => setReissued(null)}>Done</Button>}
+      >
+        {reissued && (
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Alert
+              type="info"
+              showIcon
+              message={`Fresh link for ${reissued.email}`}
+              description="A new link was generated — any previously shared link for this invite no longer works. Valid for the remainder of the 7-day window."
+            />
+            <CopyField value={reissued.url} />
+          </Space>
+        )}
+      </Modal>
     </Space>
   );
 }

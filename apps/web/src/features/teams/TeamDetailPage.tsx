@@ -12,7 +12,11 @@ export function TeamDetailPage() {
   const { ws = "", teamId = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: [ws, "team", teamId] });
+  // Refresh the detail view AND the Teams list (its member/project counts).
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: [ws, "team", teamId] });
+    void queryClient.invalidateQueries({ queryKey: [ws, "teams"] });
+  };
 
   const team = useQuery({ queryKey: [ws, "team", teamId], queryFn: () => wsApi.team(ws, teamId) });
   const wsMembers = useQuery({ queryKey: [ws, "members"], queryFn: () => membersApi.list(ws) });

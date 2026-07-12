@@ -36,6 +36,24 @@ export function registerAdminModule(app: FastifyInstance, opts: AdminModuleOptio
     };
   });
 
+  // Platform-wide daily spend/requests for the last 30 days — powers the
+  // Reports trend chart. Buckets are already UTC-pinned timestamptz.
+  app.get("/admin/timeseries", { preHandler: guard }, async () => {
+    const rows = await prisma.usageRollupDaily.groupBy({
+      by: ["bucket"],
+      where: { bucket: { gte: from() } },
+      _sum: { requests: true, costUsd: true },
+      orderBy: { bucket: "asc" },
+    });
+    return {
+      data: rows.map((r) => ({
+        date: r.bucket.toISOString().slice(0, 10),
+        requests: Number(r._sum.requests ?? 0),
+        costUsd: (r._sum.costUsd ?? 0).toString(),
+      })),
+    };
+  });
+
   app.get("/admin/workspaces", { preHandler: guard }, async () => {
     const [workspaces, rollups] = await Promise.all([
       prisma.workspace.findMany({

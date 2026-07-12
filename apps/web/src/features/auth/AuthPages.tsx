@@ -6,14 +6,22 @@ import { ApiError } from "../../api/client.js";
 
 function AuthShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Layout style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <Card style={{ width: 380 }}>
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
-          TokenTrail
-        </Typography.Title>
-        <Typography.Text type="secondary">{title}</Typography.Text>
-        <div style={{ marginTop: 24 }}>{children}</div>
-      </Card>
+    <Layout className="tt-auth">
+      <div className="tt-auth__panel">
+        <div className="tt-auth__head">
+          <div className="tt-auth__brand">
+            <span className="tt-auth__brand-mark" />
+            TokenTrail
+          </div>
+          <div className="tt-auth__sub">AI cost governance &amp; usage analytics</div>
+        </div>
+        <Card className="tt-auth__card">
+          <Typography.Text type="secondary" className="tt-eyebrow">
+            {title}
+          </Typography.Text>
+          <div className="tt-auth__form">{children}</div>
+        </Card>
+      </div>
     </Layout>
   );
 }
