@@ -8,7 +8,7 @@ import { DomainError } from "@tokentrail/shared";
 import { keyRingFromEnv } from "@tokentrail/auth";
 import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
 import { createPrismaClient } from "@tokentrail/db";
-import { createRedis, pingRedis } from "@tokentrail/queue";
+import { createQueue, createRedis, pingRedis, QUEUES } from "@tokentrail/queue";
 import type { ApiConfig } from "./config.js";
 import { makeAuthenticate } from "./plugins/guards.js";
 import { registerAuthModule } from "./modules/auth.js";
@@ -16,6 +16,7 @@ import { registerOrgModule } from "./modules/org.js";
 import { registerCredentialsModule } from "./modules/credentials.js";
 import { registerKeysModule } from "./modules/keys.js";
 import { registerAnalyticsModule } from "./modules/analytics.js";
+import { registerExportsModule } from "./modules/exports.js";
 import { registerInvitationsModule } from "./modules/invitations.js";
 import { registerBudgetsModule } from "./modules/budgets.js";
 import { createMailer } from "./lib/mailer.js";
@@ -28,6 +29,7 @@ export async function buildServer(config: ApiConfig) {
   const registry = createMetricsRegistry("api");
   const prisma = createPrismaClient(config.DATABASE_URL);
   const redis = createRedis(config.REDIS_URL);
+  const exportQueue = createQueue(QUEUES.exportCsv, redis);
   const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
 
   const licensing = initLicensing(config.LICENSE_KEY, config.LICENSE_PUBLIC_KEY);
@@ -130,6 +132,7 @@ export async function buildServer(config: ApiConfig) {
       registerCredentialsModule(api, { prisma, authenticate, ring });
       registerKeysModule(api, { prisma, redis, authenticate });
       registerAnalyticsModule(api, { prisma, authenticate });
+      registerExportsModule(api, { prisma, authenticate, exportQueue });
       registerInvitationsModule(api, {
         prisma,
         authenticate,

@@ -85,6 +85,12 @@ export interface ExplorerParams {
   projectId?: string; teamId?: string; userId?: string; provider?: Provider; model?: string;
 }
 
+export interface ExportJob {
+  id: string; status: "PENDING" | "RUNNING" | "DONE" | "FAILED";
+  kind: string; rowCount: number | null; error: string | null;
+  expiresAt: string | null; createdAt: string; downloadUrl: string | null;
+}
+
 function explorerQuery(p: Record<string, unknown>): string {
   const usp = new URLSearchParams();
   for (const [k, v] of Object.entries(p)) if (v != null && v !== "") usp.set(k, String(v));
@@ -117,6 +123,10 @@ export const wsApi = {
   events: (ws: string, cursor?: string) =>
     api<{ data: UsageEvent[]; nextCursor: string | null }>(
       `/workspaces/${ws}/usage/events?limit=50${cursor ? `&cursor=${cursor}` : ""}`),
+  createExport: (ws: string, body: { kind: "usage_events"; filters?: Record<string, string> }) =>
+    api<ExportJob>(`/workspaces/${ws}/exports`, { method: "POST", body }),
+  exports: (ws: string) => api<{ data: ExportJob[] }>(`/workspaces/${ws}/exports`),
+  exportDownloadUrl: (ws: string, id: string) => `/api/v1/workspaces/${ws}/exports/${id}/download`,
 };
 
 export interface Member {
