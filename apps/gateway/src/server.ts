@@ -9,6 +9,7 @@ import { RedisBudgetGuard } from "@tokentrail/ee-gateway";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
 import { makeGatewayHandler } from "./proxy/pipeline.js";
+import { makeUnifiedHandler } from "./proxy/unified.js";
 import { PgPricingSource, StaticPricingSource } from "./pricing.js";
 import { MemoryRateLimiter, RedisRateLimiter } from "./ratelimit.js";
 import { RedisStreamSink } from "./sink.js";
@@ -105,15 +106,12 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
     return registry.metrics();
   });
 
+  // Unified OpenAI-compatible surface (model prefix routing + translation).
+  // Registered before the native catch-all so /gw/v1/... isn't captured by it.
+  app.post("/gw/v1/chat/completions", makeUnifiedHandler(deps, logger));
+
   // Native passthrough surface: /gw/{provider}/*
   app.all("/gw/:provider/*", makeGatewayHandler(deps, logger));
-
-  // Unified OpenAI-compatible surface — translation lands in Phase 2.
-  app.post("/gw/v1/chat/completions", async (request, reply) =>
-    reply.status(501).send({
-      error: { type: "not_implemented", message: "Unified endpoint lands in Phase 2", requestId: request.id },
-    }),
-  );
 
   return { app, redis, subscriber, deps, pricingSource };
 }

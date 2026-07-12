@@ -9,7 +9,7 @@ Developer ──tt_live_ key──▶ TokenTrail Gateway ──real key──▶
                      usage events → cost engine → dashboards · budgets · reports
 ```
 
-> **Status: alpha (Phase 1 feature-complete).** End-to-end: virtual-key auth → streaming gateway (Anthropic/OpenAI/Ollama) with exact cost metering and per-key rate limits → idempotent rollup ingestion → dashboard, onboarding wizard, key management, usage explorer, and team invitations. Ships with production Dockerfiles and a single `docker compose up`. Gemini/Minimax/OpenRouter/DeepSeek adapters and the analytics explorer arrive in Phase 2 — see [docs/12-development-roadmap.md](docs/12-development-roadmap.md).
+> **Status: alpha (Phase 2 in progress).** End-to-end: virtual-key auth → streaming gateway for **all seven providers** (Anthropic, OpenAI, Gemini, Minimax, OpenRouter, DeepSeek, Ollama) with exact cost metering and per-key rate limits → idempotent rollup ingestion → dashboard, onboarding wizard, key management, usage explorer, and team invitations. Both a native passthrough surface (`/gw/{provider}/…`) and a unified OpenAI-compatible endpoint (`/gw/v1/chat/completions` with model-prefix routing and Anthropic/Gemini translation) are live. Ships with production Dockerfiles and a single `docker compose up`. The analytics explorer and CSV export are next — see [docs/12-development-roadmap.md](docs/12-development-roadmap.md).
 
 ## Design documentation
 
