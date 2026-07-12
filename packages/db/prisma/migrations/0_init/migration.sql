@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateExtension
 CREATE EXTENSION IF NOT EXISTS "citext";
 
@@ -66,8 +69,8 @@ CREATE TABLE "user" (
     "name" TEXT NOT NULL,
     "avatarUrl" TEXT,
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
@@ -78,11 +81,11 @@ CREATE TABLE "session" (
     "userId" UUID NOT NULL,
     "familyId" UUID NOT NULL,
     "tokenHash" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "revokedAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMPTZ(3) NOT NULL,
+    "revokedAt" TIMESTAMPTZ(3),
     "ip" TEXT,
     "userAgent" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
@@ -93,9 +96,9 @@ CREATE TABLE "workspace" (
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "settings" JSONB NOT NULL DEFAULT '{}',
-    "deletedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "workspace_pkey" PRIMARY KEY ("id")
 );
@@ -106,7 +109,7 @@ CREATE TABLE "workspace_member" (
     "workspaceId" UUID NOT NULL,
     "userId" UUID NOT NULL,
     "role" "WorkspaceRole" NOT NULL DEFAULT 'MEMBER',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "workspace_member_pkey" PRIMARY KEY ("id")
 );
@@ -118,8 +121,8 @@ CREATE TABLE "team" (
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "team_pkey" PRIMARY KEY ("id")
 );
@@ -130,7 +133,7 @@ CREATE TABLE "team_member" (
     "teamId" UUID NOT NULL,
     "userId" UUID NOT NULL,
     "role" "TeamRole" NOT NULL DEFAULT 'MEMBER',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "team_member_pkey" PRIMARY KEY ("id")
 );
@@ -145,8 +148,8 @@ CREATE TABLE "project" (
     "description" TEXT,
     "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "status" "ProjectStatus" NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "project_pkey" PRIMARY KEY ("id")
 );
@@ -156,7 +159,7 @@ CREATE TABLE "project_member" (
     "id" UUID NOT NULL,
     "projectId" UUID NOT NULL,
     "userId" UUID NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "project_member_pkey" PRIMARY KEY ("id")
 );
@@ -170,9 +173,9 @@ CREATE TABLE "invitation" (
     "teamId" UUID,
     "tokenHash" TEXT NOT NULL,
     "invitedById" UUID NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "acceptedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMPTZ(3) NOT NULL,
+    "acceptedAt" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "invitation_pkey" PRIMARY KEY ("id")
 );
@@ -189,8 +192,8 @@ CREATE TABLE "provider_credential" (
     "modelAllowlist" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "isDefault" BOOLEAN NOT NULL DEFAULT false,
     "status" "CredStatus" NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "provider_credential_pkey" PRIMARY KEY ("id")
 );
@@ -203,8 +206,8 @@ CREATE TABLE "provider_pool" (
     "name" TEXT NOT NULL,
     "strategy" "PoolStrategy" NOT NULL DEFAULT 'PRIORITY',
     "cooldownS" INTEGER NOT NULL DEFAULT 60,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "provider_pool_pkey" PRIMARY KEY ("id")
 );
@@ -219,7 +222,7 @@ CREATE TABLE "pool_member" (
     "rpmLimit" INTEGER,
     "tpmLimit" INTEGER,
     "health" "PoolHealth" NOT NULL DEFAULT 'HEALTHY',
-    "healthChangedAt" TIMESTAMP(3),
+    "healthChangedAt" TIMESTAMPTZ(3),
 
     CONSTRAINT "pool_member_pkey" PRIMARY KEY ("id")
 );
@@ -236,10 +239,10 @@ CREATE TABLE "virtual_key" (
     "providerAllowlist" "Provider"[] DEFAULT ARRAY[]::"Provider"[],
     "modelAllowlist" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "rpmLimit" INTEGER,
-    "expiresAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMPTZ(3),
     "status" "KeyStatus" NOT NULL DEFAULT 'ACTIVE',
-    "lastUsedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastUsedAt" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "virtual_key_pkey" PRIMARY KEY ("id")
 );
@@ -252,9 +255,9 @@ CREATE TABLE "api_token" (
     "name" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,
     "scopes" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "expiresAt" TIMESTAMP(3),
-    "lastUsedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMPTZ(3),
+    "lastUsedAt" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "api_token_pkey" PRIMARY KEY ("id")
 );
@@ -268,8 +271,8 @@ CREATE TABLE "model_price" (
     "outputPerMtok" DECIMAL(12,6) NOT NULL,
     "cacheReadPerMtok" DECIMAL(12,6) NOT NULL DEFAULT 0,
     "cacheWritePerMtok" DECIMAL(12,6) NOT NULL DEFAULT 0,
-    "effectiveFrom" TIMESTAMP(3) NOT NULL,
-    "effectiveTo" TIMESTAMP(3),
+    "effectiveFrom" TIMESTAMPTZ(3) NOT NULL,
+    "effectiveTo" TIMESTAMPTZ(3),
     "source" "PriceSource" NOT NULL DEFAULT 'SEED',
 
     CONSTRAINT "model_price_pkey" PRIMARY KEY ("id")
@@ -285,7 +288,7 @@ CREATE TABLE "model_price_override" (
     "outputPerMtok" DECIMAL(12,6) NOT NULL,
     "cacheReadPerMtok" DECIMAL(12,6) NOT NULL DEFAULT 0,
     "cacheWritePerMtok" DECIMAL(12,6) NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "model_price_override_pkey" PRIMARY KEY ("id")
 );
@@ -293,7 +296,7 @@ CREATE TABLE "model_price_override" (
 -- CreateTable
 CREATE TABLE "usage_event" (
     "id" UUID NOT NULL,
-    "occurredAt" TIMESTAMP(3) NOT NULL,
+    "occurredAt" TIMESTAMPTZ(3) NOT NULL,
     "workspaceId" UUID NOT NULL,
     "projectId" UUID NOT NULL,
     "teamId" UUID,
@@ -327,7 +330,7 @@ CREATE TABLE "usage_event" (
 
 -- CreateTable
 CREATE TABLE "usage_rollup_hourly" (
-    "bucket" TIMESTAMP(3) NOT NULL,
+    "bucket" TIMESTAMPTZ(3) NOT NULL,
     "workspaceId" UUID NOT NULL,
     "projectId" UUID NOT NULL,
     "teamId" UUID,
@@ -351,7 +354,7 @@ CREATE TABLE "usage_rollup_hourly" (
 
 -- CreateTable
 CREATE TABLE "usage_rollup_daily" (
-    "bucket" TIMESTAMP(3) NOT NULL,
+    "bucket" TIMESTAMPTZ(3) NOT NULL,
     "workspaceId" UUID NOT NULL,
     "projectId" UUID NOT NULL,
     "teamId" UUID,
@@ -386,8 +389,8 @@ CREATE TABLE "budget" (
     "softGracePct" INTEGER NOT NULL DEFAULT 10,
     "timezone" TEXT NOT NULL DEFAULT 'UTC',
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "budget_pkey" PRIMARY KEY ("id")
 );
@@ -396,10 +399,10 @@ CREATE TABLE "budget" (
 CREATE TABLE "budget_notification" (
     "id" UUID NOT NULL,
     "budgetId" UUID NOT NULL,
-    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodStart" TIMESTAMPTZ(3) NOT NULL,
     "threshold" INTEGER NOT NULL,
     "channel" TEXT NOT NULL,
-    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sentAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "budget_notification_pkey" PRIMARY KEY ("id")
 );
@@ -414,9 +417,9 @@ CREATE TABLE "export_job" (
     "rowCount" INTEGER,
     "filePath" TEXT,
     "error" TEXT,
-    "expiresAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "expiresAt" TIMESTAMPTZ(3),
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "export_job_pkey" PRIMARY KEY ("id")
 );
@@ -431,10 +434,10 @@ CREATE TABLE "scheduled_report" (
     "reportParams" JSONB NOT NULL,
     "format" "ReportFormat" NOT NULL DEFAULT 'CSV',
     "recipients" JSONB NOT NULL,
-    "lastRunAt" TIMESTAMP(3),
+    "lastRunAt" TIMESTAMPTZ(3),
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "scheduled_report_pkey" PRIMARY KEY ("id")
 );
@@ -442,7 +445,7 @@ CREATE TABLE "scheduled_report" (
 -- CreateTable
 CREATE TABLE "audit_log" (
     "id" UUID NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "workspaceId" UUID NOT NULL,
     "actorUserId" UUID,
     "actorType" TEXT NOT NULL DEFAULT 'USER',
@@ -466,8 +469,8 @@ CREATE TABLE "sso_connection" (
     "config" JSONB NOT NULL,
     "enforced" BOOLEAN NOT NULL DEFAULT false,
     "defaultRole" "WorkspaceRole" NOT NULL DEFAULT 'MEMBER',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
     CONSTRAINT "sso_connection_pkey" PRIMARY KEY ("id")
 );
@@ -480,7 +483,7 @@ CREATE TABLE "slack_integration" (
     "encryptedBotToken" BYTEA NOT NULL,
     "defaultChannel" TEXT,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "slack_integration_pkey" PRIMARY KEY ("id")
 );
@@ -504,8 +507,8 @@ CREATE TABLE "license" (
     "keyText" TEXT NOT NULL,
     "plan" TEXT NOT NULL,
     "seats" INTEGER NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "verifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMPTZ(3) NOT NULL,
+    "verifiedAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "license_pkey" PRIMARY KEY ("id")
 );
@@ -725,3 +728,19 @@ ALTER TABLE "slack_integration" ADD CONSTRAINT "slack_integration_workspaceId_fk
 
 -- AddForeignKey
 ALTER TABLE "branding" ADD CONSTRAINT "branding_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+
+-- ── TokenTrail companions (raw-SQL, per docs/05 §migration-companions) ──
+
+-- Default all sessions of the app role to UTC so date_trunc / display are
+-- timezone-safe regardless of the host's local timezone.
+ALTER ROLE CURRENT_USER SET timezone TO 'UTC';
+
+-- Only one default credential per (workspace, provider).
+CREATE UNIQUE INDEX "provider_credential_default_unique"
+  ON "provider_credential" ("workspaceId", "provider")
+  WHERE "isDefault";
+
+-- BRIN index on the append-only event stream's time column (cheap, effective
+-- for range scans on a naturally time-ordered table).
+CREATE INDEX "usage_event_occurredAt_brin" ON "usage_event" USING BRIN ("occurredAt");

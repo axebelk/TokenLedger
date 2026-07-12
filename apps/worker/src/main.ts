@@ -5,17 +5,20 @@ import { baseEnv, databaseEnv, loadConfig, redisEnv } from "@tokentrail/config";
 import { createLogger } from "@tokentrail/telemetry";
 import { createPrismaClient } from "@tokentrail/db";
 import {
-  createRedis, createWorker, CONSUMER_GROUPS, QUEUES, STREAMS, type Job,
+  createQueue, createRedis, createWorker, CONSUMER_GROUPS, HOUSEKEEPING, QUEUES, STREAMS, type Job,
 } from "@tokentrail/queue";
 import type { ExportJobData } from "@tokentrail/shared";
 import { startIngest } from "./ingest/consumer.js";
 import { runExportJob } from "./jobs/export-csv.js";
+import { runRetention } from "./jobs/retention.js";
+import { runReconcile } from "./jobs/reconcile.js";
 
 const config = loadConfig(
   baseEnv.merge(databaseEnv).merge(redisEnv).extend({
     INGEST_BATCH_SIZE: z.coerce.number().int().min(1).max(5000).default(500),
     INGEST_BLOCK_MS: z.coerce.number().int().min(50).max(5000).default(200),
     EXPORTS_DIR: z.string().optional(),
+    EVENT_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
   }),
 );
 
@@ -51,7 +54,36 @@ const exportWorker = createWorker<ExportJobData>(
 exportWorker.on("failed", (job, err) => logger.error({ err, jobId: job?.data.exportJobId }, "export worker job failed"));
 logger.info({ exportsDir }, "export-csv worker active");
 
-// More BullMQ processors (notify, retention, reconcile…) register here as they land.
+// ── BullMQ: daily housekeeping (retention + reconcile) ──────────────────────
+const housekeepingQueue = createQueue(QUEUES.housekeeping, bullRedis);
+const housekeepingWorker = createWorker(
+  QUEUES.housekeeping,
+  async (job: Job) => {
+    if (job.name === HOUSEKEEPING.retention) {
+      return runRetention(prisma, exportsDir, config.EVENT_RETENTION_DAYS, logger);
+    }
+    if (job.name === HOUSEKEEPING.reconcile) {
+      return runReconcile(prisma, logger);
+    }
+    logger.warn({ name: job.name }, "unknown housekeeping job");
+  },
+  bullRedis,
+  1,
+);
+housekeepingWorker.on("failed", (job, err) => logger.error({ err, name: job?.name }, "housekeeping job failed"));
+
+// Register the repeatable schedules idempotently (BullMQ dedupes by repeat key).
+await housekeepingQueue.add(HOUSEKEEPING.retention, {}, {
+  repeat: { pattern: "15 3 * * *" }, // daily 03:15 UTC
+  removeOnComplete: 30, removeOnFail: 30,
+});
+await housekeepingQueue.add(HOUSEKEEPING.reconcile, {}, {
+  repeat: { pattern: "45 3 * * *" }, // daily 03:45 UTC
+  removeOnComplete: 30, removeOnFail: 30,
+});
+logger.info({ retentionDays: config.EVENT_RETENTION_DAYS }, "housekeeping scheduled (retention + reconcile daily)");
+
+// More BullMQ processors (notify, scheduled reports…) register here as they land.
 
 let shuttingDown = false;
 async function shutdown(signal: string) {
@@ -60,6 +92,7 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "shutting down: finishing current batch");
   await ingest.stop();
   await exportWorker.close();
+  await housekeepingWorker.close();
   await prisma.$disconnect();
   redis.disconnect();
   bullRedis.disconnect();
