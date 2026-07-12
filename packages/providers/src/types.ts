@@ -58,4 +58,7 @@ export interface ProviderAdapter {
   /** Creates a per-request SSE usage observer. */
   streamUsageExtractor(): StreamUsageExtractor;
   mapError(httpStatus: number, body: unknown): GatewayError;
+  /** Providers that carry the model in the URL path (Gemini) implement this so
+   *  the gateway can attribute the model when the request body omits it. */
+  modelFromPath?(path: string): string;
 }

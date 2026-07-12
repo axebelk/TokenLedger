@@ -9,8 +9,8 @@ export const ALL_PROVIDERS: Provider[] = [
   "ANTHROPIC", "OPENAI", "GEMINI", "MINIMAX", "OPENROUTER", "DEEPSEEK", "OLLAMA",
 ];
 
-/** Providers with live gateway adapters in Phase 1. */
-export const ACTIVE_PROVIDERS: Provider[] = ["ANTHROPIC", "OPENAI", "OLLAMA"];
+/** All seven providers have live gateway adapters. */
+export const ACTIVE_PROVIDERS: Provider[] = [...ALL_PROVIDERS];
 
 export interface User { id: string; email: string; name: string }
 export interface WorkspaceRef { id: string; name: string; slug: string }

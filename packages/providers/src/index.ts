@@ -1,29 +1,38 @@
 export * from "./types.js";
+export * from "./translate.js";
 export { anthropicAdapter } from "./anthropic.js";
 export { openaiAdapter } from "./openai.js";
 export { ollamaAdapter } from "./ollama.js";
+export { geminiAdapter } from "./gemini.js";
+export { deepseekAdapter } from "./deepseek.js";
+export { openrouterAdapter } from "./openrouter.js";
+export { minimaxAdapter } from "./minimax.js";
+export { createOpenAiCompatibleAdapter } from "./openai-compatible.js";
 
 import type { Provider } from "@tokentrail/shared";
 import type { ProviderAdapter } from "./types.js";
 import { anthropicAdapter } from "./anthropic.js";
 import { openaiAdapter } from "./openai.js";
 import { ollamaAdapter } from "./ollama.js";
+import { geminiAdapter } from "./gemini.js";
+import { deepseekAdapter } from "./deepseek.js";
+import { openrouterAdapter } from "./openrouter.js";
+import { minimaxAdapter } from "./minimax.js";
 
-/**
- * Adapter registry. Phase 1 ships the three auth/usage archetypes
- * (Anthropic = x-api-key + SSE usage frames, OpenAI = bearer + injected
- * stream usage, Ollama = unauthenticated local + eval counts); Gemini,
- * OpenRouter, DeepSeek and Minimax land in Phase 2 (see docs/12 roadmap).
- */
-const adapters: Partial<Record<Provider, ProviderAdapter>> = {
+/** Adapter registry — all seven supported providers. */
+const adapters: Record<Provider, ProviderAdapter> = {
   ANTHROPIC: anthropicAdapter,
   OPENAI: openaiAdapter,
   OLLAMA: ollamaAdapter,
+  GEMINI: geminiAdapter,
+  DEEPSEEK: deepseekAdapter,
+  OPENROUTER: openrouterAdapter,
+  MINIMAX: minimaxAdapter,
 };
 
 export function getAdapter(provider: Provider): ProviderAdapter {
   const adapter = adapters[provider];
-  if (!adapter) throw new Error(`Provider ${provider} is not yet supported`);
+  if (!adapter) throw new Error(`Provider ${provider} is not supported`);
   return adapter;
 }
 
