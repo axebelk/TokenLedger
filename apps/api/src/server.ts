@@ -13,6 +13,7 @@ import type { ApiConfig } from "./config.js";
 import { makeAuthenticate } from "./plugins/guards.js";
 import { registerAuthModule } from "./modules/auth.js";
 import { registerOrgModule } from "./modules/org.js";
+import { registerTeamsModule } from "./modules/teams.js";
 import { registerCredentialsModule } from "./modules/credentials.js";
 import { registerKeysModule } from "./modules/keys.js";
 import { registerAnalyticsModule } from "./modules/analytics.js";
@@ -113,6 +114,7 @@ export async function buildServer(config: ApiConfig) {
         secureCookies: config.NODE_ENV === "production",
       });
       registerOrgModule(api, { prisma, authenticate });
+      registerTeamsModule(api, { prisma, authenticate });
       registerCredentialsModule(api, { prisma, authenticate, ring });
       registerKeysModule(api, { prisma, redis, authenticate });
       registerAnalyticsModule(api, { prisma, authenticate });
