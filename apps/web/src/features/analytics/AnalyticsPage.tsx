@@ -245,7 +245,7 @@ function exportCsv(ws: string, groupBy: string, rows: { key: { name: string }; r
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tokentrail-${ws}-by-${groupBy}.csv`;
+  a.download = `tokentrail-${ws}-by-${groupBy}-${dayjs().format("YYYY-MM-DD_HHmmss")}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

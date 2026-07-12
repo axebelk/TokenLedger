@@ -140,7 +140,7 @@ export const wsApi = {
     api<{ ok: boolean | null; checked: boolean; httpStatus?: number; message?: string }>(
       `/workspaces/${ws}/credentials/${id}/test`, { method: "POST" }),
   keys: (ws: string) => api<{ data: VirtualKey[] }>(`/workspaces/${ws}/keys`),
-  issueKey: (ws: string, body: { projectId: string; name: string; expiresAt?: string }) =>
+  issueKey: (ws: string, body: { projectId: string; name: string; userId?: string; expiresAt?: string }) =>
     api<VirtualKey & { key: string }>(`/workspaces/${ws}/keys`, { method: "POST", body }),
   revokeKey: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/keys/${id}/revoke`, { method: "POST" }),

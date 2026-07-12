@@ -61,7 +61,7 @@ export function ExportsDrawer({ ws, open, onClose }: { ws: string; open: boolean
                     onClick={() =>
                       downloadAuthed(
                         wsApi.exportDownloadUrl(ws, job.id),
-                        `tokentrail-usage-${job.id}.csv`,
+                        `tokentrail-${ws}-usage-${dayjs(job.createdAt).format("YYYY-MM-DD_HHmmss")}.csv`,
                       ).catch(() => message.error("Download failed"))
                     }
                   >
