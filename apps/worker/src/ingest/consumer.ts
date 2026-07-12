@@ -9,6 +9,15 @@ import {
 import { hostname } from "node:os";
 import { persistBatch } from "./persist.js";
 
+/** Idempotently (re)create the stream + consumer group. */
+async function ensureConsumerGroup(redis: Redis): Promise<void> {
+  try {
+    await redis.xgroup("CREATE", STREAMS.usageEvents, CONSUMER_GROUPS.ingest, "0", "MKSTREAM");
+  } catch (err) {
+    if (!(err instanceof Error && err.message.includes("BUSYGROUP"))) throw err;
+  }
+}
+
 interface IngestOptions {
   redis: Redis;
   prisma: PrismaClient;
@@ -66,6 +75,14 @@ export function startIngest(opts: IngestOptions): IngestHandle {
         }
       } catch (err) {
         if (!running) break;
+        // The stream/group can vanish at runtime (Redis restart without
+        // persistence, manual flush). Recreate it and continue instead of
+        // wedging the ingest loop forever.
+        if (err instanceof Error && err.message.includes("NOGROUP")) {
+          logger.warn("ingest consumer group missing; recreating");
+          await ensureConsumerGroup(redis).catch(() => {});
+          continue;
+        }
         logger.error({ err }, "ingest batch failed; backing off 1s");
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
