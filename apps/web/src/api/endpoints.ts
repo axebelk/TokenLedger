@@ -62,9 +62,42 @@ export const authApi = {
   me: () => api<{ user: User; memberships: Membership[] }>("/auth/me"),
 };
 
+export type Metric = "cost" | "requests" | "tokens" | "errors";
+export type Granularity = "hour" | "day" | "week" | "month";
+export type Dimension = "project" | "team" | "user" | "provider" | "model";
+
+export interface TimeseriesResponse {
+  meta: { metric: Metric; granularity: Granularity; currency: string; groupBy: Dimension | null };
+  series: { key: { id?: string; name?: string }; points: { t: string; v: number }[] }[];
+}
+export interface BreakdownResponse {
+  meta: { groupBy: Dimension; currency: string };
+  rows: {
+    key: { id: string; name: string };
+    costUsd: string; requests: number; errors: number;
+    inputTokens: number; outputTokens: number; errorRate: number; sharePct: number;
+  }[];
+  totalCostUsd: string;
+}
+
+export interface ExplorerParams {
+  from: string; to: string;
+  projectId?: string; teamId?: string; userId?: string; provider?: Provider; model?: string;
+}
+
+function explorerQuery(p: Record<string, unknown>): string {
+  const usp = new URLSearchParams();
+  for (const [k, v] of Object.entries(p)) if (v != null && v !== "") usp.set(k, String(v));
+  return usp.toString();
+}
+
 export const wsApi = {
   list: () => api<{ data: (WorkspaceRef & { role: string })[] }>("/workspaces"),
   projects: (ws: string) => api<{ data: Project[] }>(`/workspaces/${ws}/projects`),
+  timeseries: (ws: string, p: ExplorerParams & { metric: Metric; granularity: Granularity; groupBy?: Dimension }) =>
+    api<TimeseriesResponse>(`/workspaces/${ws}/analytics/timeseries?${explorerQuery({ ...p })}`),
+  breakdown: (ws: string, p: ExplorerParams & { groupBy: Dimension; limit?: number }) =>
+    api<BreakdownResponse>(`/workspaces/${ws}/analytics/breakdown?${explorerQuery({ ...p })}`),
   createProject: (ws: string, body: { name: string; description?: string }) =>
     api<Project>(`/workspaces/${ws}/projects`, { method: "POST", body }),
   credentials: (ws: string) => api<{ data: Credential[] }>(`/workspaces/${ws}/credentials`),
