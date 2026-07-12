@@ -95,6 +95,28 @@ export function makeGatewayHandler(deps: GatewayDeps, logger: Logger) {
       }
     }
 
+    // ── Budget enforcement (EE, O(1) Redis check maintained by the worker) ──
+    if (deps.budgetGuard) {
+      const verdict = await deps.budgetGuard.check({
+        workspaceId: ctx.workspaceId,
+        projectId: ctx.projectId,
+        userId: ctx.userId,
+        ...(ctx.teamId ? { teamId: ctx.teamId } : {}),
+      });
+      if (verdict.blocked) {
+        emitter.finalize({ httpStatus: 402, streamed: false, usage: null, statusOverride: "BLOCKED_BUDGET" });
+        return reply.status(402).send({
+          error: {
+            type: "budget_exceeded",
+            message: `The ${verdict.scope.toLowerCase()} budget for this request is exhausted`,
+            scope: verdict.scope,
+            ...(verdict.resetsAt ? { resetsAt: verdict.resetsAt } : {}),
+            requestId: request.id,
+          },
+        });
+      }
+    }
+
     // ── Credential ───────────────────────────────────────────────────────────
     let credential;
     try {

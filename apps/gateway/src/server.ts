@@ -4,6 +4,8 @@ import { Counter } from "prom-client";
 import { keyRingFromEnv } from "@tokentrail/auth";
 import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
 import { createRedis, pingRedis } from "@tokentrail/queue";
+import { entitled, initLicensing } from "@tokentrail/ee-licensing";
+import { RedisBudgetGuard } from "@tokentrail/ee-gateway";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
 import { makeGatewayHandler } from "./proxy/pipeline.js";
@@ -26,6 +28,12 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
     help: "Usage events dropped after the retry buffer overflowed",
     registers: [registry],
   });
+
+  // ── Enterprise gates ─────────────────────────────────────────────────────
+  const licensing = initLicensing(config.LICENSE_KEY, config.LICENSE_PUBLIC_KEY);
+  if (config.LICENSE_KEY && !licensing.license) {
+    logger.warn({ reason: licensing.reason }, "LICENSE_KEY present but invalid — running community edition");
+  }
 
   // ── Dependency wiring: PG-backed when configured, in-memory otherwise ────
   const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
@@ -60,6 +68,10 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
       rateLimiter: new MemoryRateLimiter(),
       ...overrides,
     };
+  }
+  if (entitled("budget_enforcement") && !deps.budgetGuard) {
+    deps.budgetGuard = new RedisBudgetGuard(redis);
+    logger.info("enterprise budget enforcement active");
   }
 
   const app = Fastify({

@@ -242,6 +242,47 @@ describe("gateway proxy — errors and guards", () => {
     expect(blockEvent).toMatchObject({ httpStatus: 429, inputTokens: 0, costUsd: "0.00000000" });
   });
 
+  it("blocks with 402 when the budget guard denies, and records BLOCKED_BUDGET", async () => {
+    const guarded = await buildServer(config, {
+      keyStore,
+      credentialStore: credStore,
+      sink,
+      pricing: new StaticPricingSource(),
+      rateLimiter: new MemoryRateLimiter(),
+      budgetGuard: {
+        check: async () => ({
+          blocked: true,
+          scope: "PROJECT",
+          scopeId: ctxBase.projectId,
+          resetsAt: "2026-08-01T00:00:00.000Z",
+        }),
+      },
+    });
+    try {
+      const res = await guarded.app.inject({
+        method: "POST",
+        url: "/gw/anthropic/v1/messages",
+        headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+        payload: { model: "claude-sonnet-4-5" },
+      });
+      expect(res.statusCode).toBe(402);
+      const body = res.json() as { error: { type: string; scope: string; resetsAt: string } };
+      expect(body.error).toMatchObject({
+        type: "budget_exceeded",
+        scope: "PROJECT",
+        resetsAt: "2026-08-01T00:00:00.000Z",
+      });
+      expect(mock.requests).toHaveLength(0); // provider never contacted
+
+      await waitForEvents(1);
+      expect(sink.events[0]).toMatchObject({ status: "BLOCKED_BUDGET", httpStatus: 402, costUsd: "0.00000000" });
+    } finally {
+      await guarded.app.close();
+      guarded.redis.disconnect();
+      guarded.subscriber.disconnect();
+    }
+  });
+
   it("returns 502 and records the event when the upstream is unreachable", async () => {
     credStore.set(WS, "OLLAMA", { credentialId: "c-dead", baseUrl: "http://127.0.0.1:1" });
     const res = await server.app.inject({

@@ -17,7 +17,9 @@ import { registerCredentialsModule } from "./modules/credentials.js";
 import { registerKeysModule } from "./modules/keys.js";
 import { registerAnalyticsModule } from "./modules/analytics.js";
 import { registerInvitationsModule } from "./modules/invitations.js";
+import { registerBudgetsModule } from "./modules/budgets.js";
 import { createMailer } from "./lib/mailer.js";
+import { activeLicense, initLicensing, EE_FEATURES, entitled } from "@tokentrail/ee-licensing";
 
 export type ApiServer = Awaited<ReturnType<typeof buildServer>>;
 
@@ -27,6 +29,11 @@ export async function buildServer(config: ApiConfig) {
   const prisma = createPrismaClient(config.DATABASE_URL);
   const redis = createRedis(config.REDIS_URL);
   const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
+
+  const licensing = initLicensing(config.LICENSE_KEY, config.LICENSE_PUBLIC_KEY);
+  if (config.LICENSE_KEY && !licensing.license) {
+    logger.warn({ reason: licensing.reason }, "LICENSE_KEY present but invalid — running community edition");
+  }
 
   const app = Fastify({
     loggerInstance: logger,
@@ -99,11 +106,20 @@ export async function buildServer(config: ApiConfig) {
   const authenticate = makeAuthenticate(config.JWT_SECRET);
   await app.register(
     async (api) => {
-      api.get("/meta/version", async () => ({
-        name: "tokentrail",
-        version: process.env.npm_package_version ?? "0.1.0",
-        edition: "community",
-      }));
+      api.get("/meta/version", async () => {
+        const license = activeLicense();
+        return {
+          name: "tokentrail",
+          version: process.env.npm_package_version ?? "0.1.0",
+          edition: license ? "enterprise" : "community",
+          ...(license
+            ? {
+                plan: license.plan,
+                entitlements: EE_FEATURES.filter((f) => entitled(f)),
+              }
+            : {}),
+        };
+      });
       registerAuthModule(api, {
         prisma,
         jwtSecret: config.JWT_SECRET,
@@ -120,6 +136,7 @@ export async function buildServer(config: ApiConfig) {
         mailer: createMailer(config.SMTP_URL, logger, "TokenTrail <noreply@tokentrail.local>"),
         publicBaseUrl: config.PUBLIC_BASE_URL,
       });
+      registerBudgetsModule(api, { prisma, redis, authenticate });
     },
     { prefix: "/api/v1" },
   );

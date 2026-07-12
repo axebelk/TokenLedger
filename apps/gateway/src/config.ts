@@ -10,6 +10,8 @@ const env = baseEnv
     // front); otherwise the gateway runs on empty in-memory stores (dev only).
     DATABASE_URL: z.string().optional(),
     TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
+    LICENSE_KEY: z.string().optional(),
+    LICENSE_PUBLIC_KEY: z.string().optional(),
   });
 
 export type GatewayConfig = Readonly<z.infer<typeof env>>;

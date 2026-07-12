@@ -1,5 +1,5 @@
 {
-  "name": "@tokentrail/ee-licensing",
+  "name": "@tokentrail/ee-worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,13 +11,18 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "license": "tsx src/cli.ts"
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tokentrail/db": "workspace:*",
+    "@tokentrail/ee-gateway": "workspace:*",
+    "@tokentrail/queue": "workspace:*",
+    "@tokentrail/shared": "workspace:*",
+    "@tokentrail/telemetry": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "typescript": "^5.8.0",
-    "vitest": "^3.0.0",
-    "tsx": "^4.19.0"
+    "vitest": "^3.0.0"
   }
 }

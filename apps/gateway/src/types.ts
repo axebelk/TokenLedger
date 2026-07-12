@@ -52,10 +52,27 @@ export interface RateLimiter {
   check(bucketKey: string, rpmLimit: number): Promise<RateLimitDecision>;
 }
 
+export interface BudgetScopes {
+  workspaceId: string;
+  projectId: string;
+  userId: string;
+  teamId?: string;
+}
+
+export type BudgetVerdict =
+  | { blocked: false }
+  | { blocked: true; scope: string; scopeId: string; resetsAt?: string };
+
+/** EE seam (FR-GW-9): implemented by @tokentrail/ee-gateway when licensed. */
+export interface BudgetGuard {
+  check(scopes: BudgetScopes): Promise<BudgetVerdict>;
+}
+
 export interface GatewayDeps {
   keyStore: KeyStore;
   credentialStore: CredentialStore;
   sink: EventSink;
   pricing: PricingSource;
   rateLimiter: RateLimiter;
+  budgetGuard?: BudgetGuard;
 }

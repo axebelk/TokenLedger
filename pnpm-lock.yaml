@@ -38,6 +38,15 @@ importers:
       '@tokentrail/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@tokentrail/ee-gateway':
+        specifier: workspace:*
+        version: link:../../ee/gateway
+      '@tokentrail/ee-licensing':
+        specifier: workspace:*
+        version: link:../../ee/licensing
+      '@tokentrail/ee-worker':
+        specifier: workspace:*
+        version: link:../../ee/worker
       '@tokentrail/providers':
         specifier: workspace:*
         version: link:../../packages/providers
@@ -90,6 +99,12 @@ importers:
       '@tokentrail/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@tokentrail/ee-gateway':
+        specifier: workspace:*
+        version: link:../../ee/gateway
+      '@tokentrail/ee-licensing':
+        specifier: workspace:*
+        version: link:../../ee/licensing
       '@tokentrail/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -191,6 +206,12 @@ importers:
       '@tokentrail/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@tokentrail/ee-licensing':
+        specifier: workspace:*
+        version: link:../../ee/licensing
+      '@tokentrail/ee-worker':
+        specifier: workspace:*
+        version: link:../../ee/worker
       '@tokentrail/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -220,7 +241,57 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(tsx@4.23.0)
 
+  ee/gateway:
+    dependencies:
+      '@tokentrail/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
+      '@tokentrail/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(tsx@4.23.0)
+
   ee/licensing:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(tsx@4.23.0)
+
+  ee/worker:
+    dependencies:
+      '@tokentrail/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@tokentrail/ee-gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@tokentrail/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
+      '@tokentrail/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@tokentrail/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
     devDependencies:
       '@types/node':
         specifier: ^22.10.0

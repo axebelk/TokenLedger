@@ -13,6 +13,8 @@
   "dependencies": {
     "@tokentrail/config": "workspace:*",
     "@tokentrail/db": "workspace:*",
+    "@tokentrail/ee-licensing": "workspace:*",
+    "@tokentrail/ee-worker": "workspace:*",
     "@tokentrail/queue": "workspace:*",
     "@tokentrail/shared": "workspace:*",
     "@tokentrail/telemetry": "workspace:*",

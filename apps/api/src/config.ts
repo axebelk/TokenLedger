@@ -10,6 +10,8 @@ const apiEnv = baseEnv
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     JWT_SECRET: z.string().min(32).optional(),
     TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
+    LICENSE_KEY: z.string().optional(),
+    LICENSE_PUBLIC_KEY: z.string().optional(),
   })
   .transform((env, ctx) => {
     let jwtSecret = env.JWT_SECRET;
