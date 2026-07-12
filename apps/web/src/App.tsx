@@ -24,8 +24,11 @@ export function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<AcceptInvitePage />} />
         <Route path="/" element={<HomeRedirect />} />
-        <Route element={<RequireAuth />}>
+        {/* Standalone (no workspace shell): the platform view spans all tenants. */}
+        <Route element={<RequireAuthBare />}>
           <Route path="/admin" element={<PlatformPage />} />
+        </Route>
+        <Route element={<RequireAuth />}>
           <Route path="/:ws" element={<RequireWorkspace />}>
             <Route index element={<DashboardPage />} />
             <Route path="setup" element={<SetupPage />} />
@@ -50,6 +53,14 @@ function CenteredSpin() {
       <Spin size="large" />
     </div>
   );
+}
+
+/** Auth gate that renders the child route directly (no workspace shell). */
+function RequireAuthBare() {
+  const { status } = useAuth();
+  if (status === "loading") return <CenteredSpin />;
+  if (status === "anonymous") return <Navigate to="/login" replace />;
+  return <Outlet />;
 }
 
 function RequireAuth() {
