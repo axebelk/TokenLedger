@@ -10,8 +10,9 @@ import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
 import { createPrismaClient } from "@tokentrail/db";
 import { createQueue, createRedis, pingRedis, QUEUES } from "@tokentrail/queue";
 import type { ApiConfig } from "./config.js";
-import { makeAuthenticate } from "./plugins/guards.js";
+import { makeAuthenticate, makeSuperAdminGuard, parseSuperAdmins } from "./plugins/guards.js";
 import { registerAuthModule } from "./modules/auth.js";
+import { registerAdminModule } from "./modules/admin.js";
 import { registerOrgModule } from "./modules/org.js";
 import { registerTeamsModule } from "./modules/teams.js";
 import { registerCredentialsModule } from "./modules/credentials.js";
@@ -107,6 +108,8 @@ export async function buildServer(config: ApiConfig) {
 
   // ── /api/v1 modules ────────────────────────────────────────────────────────
   const authenticate = makeAuthenticate(config.JWT_SECRET);
+  const superAdmins = parseSuperAdmins(config.SUPERADMIN_EMAILS);
+  const superAdminGuard = makeSuperAdminGuard(superAdmins);
   await app.register(
     async (api) => {
       api.get("/meta/version", async () => {
@@ -128,7 +131,9 @@ export async function buildServer(config: ApiConfig) {
         jwtSecret: config.JWT_SECRET,
         authenticate,
         secureCookies: config.NODE_ENV === "production",
+        superAdmins,
       });
+      registerAdminModule(api, { prisma, authenticate, superAdminGuard });
       registerOrgModule(api, { prisma, authenticate });
       registerTeamsModule(api, { prisma, authenticate });
       registerCredentialsModule(api, { prisma, authenticate, ring });

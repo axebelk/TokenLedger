@@ -70,7 +70,23 @@ export const authApi = {
   login: (body: { email: string; password: string }) =>
     api<{ accessToken: string; user: User }>("/auth/login", { method: "POST", body }),
   logout: () => api<{ ok: boolean }>("/auth/logout", { method: "POST" }),
-  me: () => api<{ user: User; memberships: Membership[] }>("/auth/me"),
+  me: () => api<{ user: User; isSuperAdmin: boolean; memberships: Membership[] }>("/auth/me"),
+};
+
+export interface PlatformStats {
+  workspaces: number; users: number; activeKeys: number; requests30d: number; costUsd30d: string;
+}
+export interface PlatformWorkspace {
+  id: string; name: string; slug: string; createdAt: string;
+  members: number; projects: number; requests30d: number; costUsd30d: string;
+}
+export interface PlatformDayPoint {
+  date: string; requests: number; costUsd: string;
+}
+export const adminApi = {
+  stats: () => api<PlatformStats>("/admin/stats"),
+  workspaces: () => api<{ data: PlatformWorkspace[] }>("/admin/workspaces"),
+  timeseries: () => api<{ data: PlatformDayPoint[] }>("/admin/timeseries"),
 };
 
 export type Metric = "cost" | "requests" | "tokens" | "errors";
@@ -117,8 +133,12 @@ export const wsApi = {
     api<BreakdownResponse>(`/workspaces/${ws}/analytics/breakdown?${explorerQuery({ ...p })}`),
   createProject: (ws: string, body: { name: string; description?: string; teamId?: string }) =>
     api<Project>(`/workspaces/${ws}/projects`, { method: "POST", body }),
+  projectsByStatus: (ws: string, status: "ACTIVE" | "ARCHIVED") =>
+    api<{ data: Project[] }>(`/workspaces/${ws}/projects?status=${status}`),
   updateProject: (ws: string, id: string, body: { teamId?: string | null; name?: string; status?: string }) =>
     api<Project>(`/workspaces/${ws}/projects/${id}`, { method: "PATCH", body }),
+  deleteProject: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/projects/${id}`, { method: "DELETE" }),
   teams: (ws: string) => api<{ data: Team[] }>(`/workspaces/${ws}/teams`),
   team: (ws: string, id: string) => api<TeamDetail>(`/workspaces/${ws}/teams/${id}`),
   createTeam: (ws: string, body: { name: string; description?: string }) =>
@@ -139,8 +159,12 @@ export const wsApi = {
   testCredential: (ws: string, id: string) =>
     api<{ ok: boolean | null; checked: boolean; httpStatus?: number; message?: string }>(
       `/workspaces/${ws}/credentials/${id}/test`, { method: "POST" }),
+  updateCredential: (ws: string, id: string, body: { status?: "ACTIVE" | "DISABLED"; isDefault?: true }) =>
+    api<Credential>(`/workspaces/${ws}/credentials/${id}`, { method: "PATCH", body }),
+  deleteCredential: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/credentials/${id}`, { method: "DELETE" }),
   keys: (ws: string) => api<{ data: VirtualKey[] }>(`/workspaces/${ws}/keys`),
-  issueKey: (ws: string, body: { projectId: string; name: string; expiresAt?: string }) =>
+  issueKey: (ws: string, body: { projectId: string; name: string; userId?: string; providerAllowlist?: Provider[]; expiresAt?: string }) =>
     api<VirtualKey & { key: string }>(`/workspaces/${ws}/keys`, { method: "POST", body }),
   revokeKey: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/keys/${id}/revoke`, { method: "POST" }),
@@ -165,7 +189,9 @@ export const membersApi = {
   list: (ws: string) => api<{ data: Member[] }>(`/workspaces/${ws}/members`),
   invitations: (ws: string) => api<{ data: Invitation[] }>(`/workspaces/${ws}/invitations`),
   invite: (ws: string, body: { email: string; role: string }) =>
-    api<Invitation>(`/workspaces/${ws}/invitations`, { method: "POST", body }),
+    api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations`, { method: "POST", body }),
+  inviteLink: (ws: string, id: string) =>
+    api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations/${id}/link`, { method: "POST" }),
   revokeInvite: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/invitations/${id}`, { method: "DELETE" }),
 };

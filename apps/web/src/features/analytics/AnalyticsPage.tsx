@@ -13,6 +13,8 @@ import {
   formatUsd, wsApi,
   type Dimension, type Granularity, type Metric, type Provider,
 } from "../../api/endpoints.js";
+import { chartPalette, chartPrimary } from "../../app/theme.js";
+import { PageHeader } from "../../components/PageHeader.js";
 
 const { RangePicker } = DatePicker;
 
@@ -33,15 +35,16 @@ const DIMENSIONS: { value: Dimension; label: string }[] = [
 const PROVIDERS: Provider[] = [
   "ANTHROPIC", "OPENAI", "GEMINI", "MINIMAX", "OPENROUTER", "DEEPSEEK", "OLLAMA",
 ];
-const PALETTE = ["#3b5bdb", "#12b886", "#f59f00", "#e64980", "#7048e8", "#0ca678", "#f76707", "#1c7ed6"];
+const PALETTE = chartPalette;
 
 export function AnalyticsPage() {
   const { ws = "" } = useParams();
   const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, "day"), dayjs()]);
-  const [metric, setMetric] = useState<Metric>("cost");
+  const [metric, setMetric] = useState<Metric>("requests");
   const [granularity, setGranularity] = useState<Granularity>("day");
-  const [groupBy, setGroupBy] = useState<Dimension>("project");
+  const [groupBy, setGroupBy] = useState<Dimension>("user");
   const [provider, setProvider] = useState<Provider | undefined>(undefined);
+  const [exporting, setExporting] = useState(false);
 
   const params = {
     from: range[0].startOf("day").toISOString(),
@@ -80,8 +83,45 @@ export function AnalyticsPage() {
 
   const metricFmt = (v: number) => (metric === "cost" ? formatUsd(v, true) : compact(v));
 
+  // Datewise export: one row per (date, dimension) with every metric — the
+  // actual "daily report", not the aggregated totals.
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const metrics: Metric[] = ["requests", "tokens", "cost", "errors"];
+      const responses = await Promise.all(
+        metrics.map((m) => wsApi.timeseries(ws, { ...params, metric: m, granularity, groupBy })),
+      );
+      type Row = { date: string; dim: string; requests: number; tokens: number; cost: number; errors: number };
+      const rows = new Map<string, Row>();
+      responses.forEach((res, i) => {
+        const m = metrics[i]!;
+        for (const s of res.series) {
+          const dim = s.key.name ?? "total";
+          for (const p of s.points) {
+            const date = fmtDateKey(p.t, granularity);
+            const key = `${date}|${dim}`;
+            const row = rows.get(key) ?? { date, dim, requests: 0, tokens: 0, cost: 0, errors: 0 };
+            row[m] = p.v;
+            rows.set(key, row);
+          }
+        }
+      });
+      const sorted = [...rows.values()].sort((a, b) => a.date.localeCompare(b.date) || a.dim.localeCompare(b.dim));
+      const header = ["Date", cap(groupBy), "Requests", "Tokens", "CostUSD", "Errors"];
+      const lines = sorted.map((r) => [r.date, csv(r.dim), r.requests, r.tokens, r.cost.toFixed(6), r.errors].join(","));
+      downloadCsv(
+        [header.join(","), ...lines].join("\n"),
+        `tokentrail-${ws}-by-${groupBy}-daily-${dayjs().format("YYYY-MM-DD_HHmmss")}.csv`,
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="middle">
+      <PageHeader eyebrow="Analytics" title="Usage explorer" />
       <Card size="small">
         <Row gutter={[12, 12]} align="middle">
           <Col>
@@ -116,7 +156,8 @@ export function AnalyticsPage() {
           <Col flex="auto" style={{ textAlign: "right" }}>
             <Button
               icon={<DownloadOutlined />}
-              onClick={() => exportCsv(ws, groupBy, breakdown.data?.rows ?? [])}
+              loading={exporting}
+              onClick={handleExport}
               disabled={!breakdown.data?.rows.length}
             >
               Export CSV
@@ -235,20 +276,23 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function exportCsv(ws: string, groupBy: string, rows: { key: { name: string }; requests: number; inputTokens: number; outputTokens: number; errorRate: number; costUsd: string; sharePct: number }[]): void {
-  const header = [cap(groupBy), "Requests", "InputTokens", "OutputTokens", "ErrorRate", "CostUSD", "SharePct"];
-  const lines = rows.map((r) => [
-    csv(r.key.name), r.requests, r.inputTokens, r.outputTokens,
-    (r.errorRate * 100).toFixed(2), r.costUsd, r.sharePct.toFixed(2),
-  ].join(","));
-  const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
+/** Date key for the datewise CSV, per granularity (all UTC-day-based). */
+function fmtDateKey(iso: string, g: Granularity): string {
+  const d = dayjs(iso);
+  if (g === "hour") return d.format("YYYY-MM-DD HH:00");
+  if (g === "month") return d.format("YYYY-MM");
+  return d.format("YYYY-MM-DD"); // day and week (week = starting date)
+}
+
+function downloadCsv(content: string, filename: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: "text/csv" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tokentrail-${ws}-by-${groupBy}.csv`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 }
+
 function csv(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }

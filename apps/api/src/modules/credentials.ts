@@ -126,4 +126,56 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
       return { ok: false, checked: true, message: "Provider unreachable" };
     }
   });
+
+  const patchSchema = z.object({
+    status: z.enum(["ACTIVE", "DISABLED"]).optional(),
+    isDefault: z.literal(true).optional(),
+  });
+
+  app.patch("/workspaces/:ws/credentials/:id", { preHandler: admin }, async (request) => {
+    const { id } = request.params as { id: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const body = patchSchema.parse(request.body);
+    const stored = await prisma.providerCredential.findFirst({ where: { id, workspaceId } });
+    if (!stored) throw new NotFoundError("Credential", id);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (body.isDefault) {
+        await tx.providerCredential.updateMany({
+          where: { workspaceId, provider: stored.provider, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      return tx.providerCredential.update({
+        where: { id },
+        data: {
+          ...(body.status ? { status: body.status } : {}),
+          ...(body.isDefault ? { isDefault: true } : {}),
+        },
+        select: {
+          id: true, provider: true, name: true, secretLast4: true, baseUrl: true,
+          isDefault: true, status: true, createdAt: true,
+        },
+      });
+    });
+    return updated;
+  });
+
+  app.delete("/workspaces/:ws/credentials/:id", { preHandler: admin }, async (request) => {
+    const { id } = request.params as { id: string };
+    const stored = await prisma.providerCredential.findFirst({
+      where: { id, workspaceId: request.wsCtx!.workspaceId },
+    });
+    if (!stored) throw new NotFoundError("Credential", id);
+    try {
+      await prisma.providerCredential.delete({ where: { id } });
+    } catch (err) {
+      // Referenced by a provider pool (EE) — can't hard-delete; disable instead.
+      if ((err as { code?: string }).code === "P2003") {
+        throw new ValidationError("This credential is in use by a provider pool — disable it instead of deleting");
+      }
+      throw err;
+    }
+    return { ok: true };
+  });
 }

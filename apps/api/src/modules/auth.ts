@@ -33,10 +33,11 @@ interface AuthModuleOptions {
   jwtSecret: string;
   authenticate: preHandlerHookHandler;
   secureCookies: boolean;
+  superAdmins: Set<string>;
 }
 
 export function registerAuthModule(app: FastifyInstance, opts: AuthModuleOptions): void {
-  const { prisma, jwtSecret, authenticate, secureCookies } = opts;
+  const { prisma, jwtSecret, authenticate, secureCookies, superAdmins } = opts;
 
   function setRefreshCookie(reply: FastifyReply, token: string): void {
     reply.setCookie(REFRESH_COOKIE, token, {
@@ -168,6 +169,7 @@ export function registerAuthModule(app: FastifyInstance, opts: AuthModuleOptions
     });
     return {
       user: publicUser(user),
+      isSuperAdmin: superAdmins.has(user.email.toLowerCase()),
       memberships: user.memberships.map((m) => ({ workspace: m.workspace, role: m.role })),
     };
   });

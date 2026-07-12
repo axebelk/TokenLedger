@@ -12,6 +12,8 @@ const apiEnv = baseEnv
     TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
     LICENSE_KEY: z.string().optional(),
     LICENSE_PUBLIC_KEY: z.string().optional(),
+    // Comma-separated emails granted instance-level super-admin (cross-workspace).
+    SUPERADMIN_EMAILS: z.string().optional(),
   })
   .transform((env, ctx) => {
     let jwtSecret = env.JWT_SECRET;

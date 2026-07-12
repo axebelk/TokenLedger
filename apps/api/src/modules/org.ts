@@ -115,6 +115,26 @@ export function registerOrgModule(app: FastifyInstance, opts: OrgModuleOptions):
       },
     });
   });
+
+  app.delete("/workspaces/:ws/projects/:id", { preHandler: admin }, async (request) => {
+    const { id } = request.params as { id: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const project = await prisma.project.findFirst({ where: { id, workspaceId } });
+    if (!project) throw new NotFoundError("Project", id);
+
+    const usageCount = await prisma.usageEvent.count({ where: { projectId: id } });
+    if (usageCount > 0) {
+      throw new ValidationError(
+        "This project has recorded usage — archive it instead of deleting, to preserve the history",
+      );
+    }
+    // Members cascade; keys have no usage (guarded above) so remove them first.
+    await prisma.$transaction([
+      prisma.virtualKey.deleteMany({ where: { projectId: id } }),
+      prisma.project.delete({ where: { id } }),
+    ]);
+    return { ok: true };
+  });
 }
 
 function slugify(name: string): string {

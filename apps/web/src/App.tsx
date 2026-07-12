@@ -13,6 +13,11 @@ import { TeamDetailPage } from "./features/teams/TeamDetailPage.js";
 import { ProvidersPage } from "./features/providers/ProvidersPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
+import { SetupPage } from "./features/setup/SetupPage.js";
+import { PlatformShell } from "./features/admin/PlatformShell.js";
+import { PlatformOverview } from "./features/admin/PlatformOverview.js";
+import { PlatformTenants } from "./features/admin/PlatformTenants.js";
+import { PlatformReports } from "./features/admin/PlatformReports.js";
 
 export function App() {
   return (
@@ -22,9 +27,18 @@ export function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<AcceptInvitePage />} />
         <Route path="/" element={<HomeRedirect />} />
+        {/* Standalone (no workspace shell): the platform console spans all tenants. */}
+        <Route element={<RequireSuperAdmin />}>
+          <Route path="/admin" element={<PlatformShell />}>
+            <Route index element={<PlatformOverview />} />
+            <Route path="tenants" element={<PlatformTenants />} />
+            <Route path="reports" element={<PlatformReports />} />
+          </Route>
+        </Route>
         <Route element={<RequireAuth />}>
           <Route path="/:ws" element={<RequireWorkspace />}>
             <Route index element={<DashboardPage />} />
+            <Route path="setup" element={<SetupPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="usage" element={<UsagePage />} />
             <Route path="keys" element={<KeysPage />} />
@@ -46,6 +60,15 @@ function CenteredSpin() {
       <Spin size="large" />
     </div>
   );
+}
+
+/** Super-admin gate for the platform console (no workspace shell). */
+function RequireSuperAdmin() {
+  const { status, isSuperAdmin } = useAuth();
+  if (status === "loading") return <CenteredSpin />;
+  if (status === "anonymous") return <Navigate to="/login" replace />;
+  if (!isSuperAdmin) return <Navigate to="/" replace />;
+  return <Outlet />;
 }
 
 function RequireAuth() {
