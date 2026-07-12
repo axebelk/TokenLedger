@@ -143,8 +143,8 @@ model User {
   name         String
   avatarUrl    String?
   status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(3)
 
   memberships        WorkspaceMember[]
   teamMemberships    TeamMember[]
@@ -165,11 +165,11 @@ model Session {
   userId    String    @db.Uuid
   familyId  String    @db.Uuid
   tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
+  expiresAt DateTime @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
   ip        String?
   userAgent String?
-  createdAt DateTime  @default(now())
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id])
 
@@ -183,9 +183,9 @@ model Workspace {
   name      String
   slug      String    @unique
   settings  Json      @default("{}") // failurePolicy, memberAnalytics, displayCurrency…
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
 
   members          WorkspaceMember[]
   teams            Team[]
@@ -212,7 +212,7 @@ model WorkspaceMember {
   workspaceId String        @db.Uuid
   userId      String        @db.Uuid
   role        WorkspaceRole @default(MEMBER)
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
@@ -228,8 +228,8 @@ model Team {
   name        String
   slug        String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   workspace Workspace    @relation(fields: [workspaceId], references: [id])
   members   TeamMember[]
@@ -244,7 +244,7 @@ model TeamMember {
   teamId    String   @db.Uuid
   userId    String   @db.Uuid
   role      TeamRole @default(MEMBER)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
@@ -263,8 +263,8 @@ model Project {
   description String?
   tags        String[]      @default([])
   status      ProjectStatus @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
 
   workspace   Workspace       @relation(fields: [workspaceId], references: [id])
   team        Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
@@ -281,7 +281,7 @@ model ProjectMember {
   id        String   @id @default(uuid(7)) @db.Uuid
   projectId String   @db.Uuid
   userId    String   @db.Uuid
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
@@ -298,9 +298,9 @@ model Invitation {
   teamId      String?       @db.Uuid
   tokenHash   String        @unique
   invitedById String        @db.Uuid
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime      @default(now())
+  expiresAt   DateTime @db.Timestamptz(3)
+  acceptedAt  DateTime? @db.Timestamptz(3)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -321,8 +321,8 @@ model ProviderCredential {
   modelAllowlist  String[]   @default([])
   isDefault       Boolean    @default(false) // partial unique (ws,provider) in SQL migration
   status          CredStatus @default(ACTIVE)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   poolMembers PoolMember[]
@@ -339,8 +339,8 @@ model ProviderPool {
   name        String
   strategy    PoolStrategy @default(PRIORITY)
   cooldownS   Int          @default(60)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   members     PoolMember[]
@@ -359,7 +359,7 @@ model PoolMember {
   rpmLimit        Int?
   tpmLimit        Int?
   health          PoolHealth @default(HEALTHY)
-  healthChangedAt DateTime?
+  healthChangedAt DateTime? @db.Timestamptz(3)
 
   pool       ProviderPool       @relation(fields: [poolId], references: [id], onDelete: Cascade)
   credential ProviderCredential @relation(fields: [credentialId], references: [id])
@@ -379,10 +379,10 @@ model VirtualKey {
   providerAllowlist Provider[] @default([]) // empty ⇒ all workspace providers
   modelAllowlist    String[]   @default([])
   rpmLimit          Int?
-  expiresAt         DateTime?
+  expiresAt         DateTime? @db.Timestamptz(3)
   status            KeyStatus  @default(ACTIVE)
-  lastUsedAt        DateTime?
-  createdAt         DateTime   @default(now())
+  lastUsedAt        DateTime? @db.Timestamptz(3)
+  createdAt         DateTime   @default(now()) @db.Timestamptz(3)
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   project     Project      @relation(fields: [projectId], references: [id])
@@ -401,9 +401,9 @@ model ApiToken {
   name        String
   tokenHash   String    @unique
   scopes      String[]  @default([])
-  expiresAt   DateTime?
-  lastUsedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  expiresAt   DateTime? @db.Timestamptz(3)
+  lastUsedAt  DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id])
 
@@ -420,8 +420,8 @@ model ModelPrice {
   outputPerMtok     Decimal     @db.Decimal(12, 6)
   cacheReadPerMtok  Decimal     @default(0) @db.Decimal(12, 6)
   cacheWritePerMtok Decimal     @default(0) @db.Decimal(12, 6)
-  effectiveFrom     DateTime
-  effectiveTo       DateTime? // null ⇒ current
+  effectiveFrom     DateTime @db.Timestamptz(3)
+  effectiveTo       DateTime? @db.Timestamptz(3) // null ⇒ current
   source            PriceSource @default(SEED)
 
   @@unique([provider, modelPattern, effectiveFrom])
@@ -438,7 +438,7 @@ model ModelPriceOverride {
   outputPerMtok     Decimal  @db.Decimal(12, 6)
   cacheReadPerMtok  Decimal  @default(0) @db.Decimal(12, 6)
   cacheWritePerMtok Decimal  @default(0) @db.Decimal(12, 6)
-  createdAt         DateTime @default(now())
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -451,7 +451,7 @@ model ModelPriceOverride {
 
 model UsageEvent {
   id               String      @db.Uuid // uuid v7 minted at gateway
-  occurredAt       DateTime // partition key
+  occurredAt       DateTime @db.Timestamptz(3) // partition key
   workspaceId      String      @db.Uuid
   projectId        String      @db.Uuid
   teamId           String?     @db.Uuid // denormalized at event time
@@ -495,7 +495,7 @@ model UsageEvent {
 }
 
 model UsageRollupHourly {
-  bucket           DateTime
+  bucket           DateTime @db.Timestamptz(3)
   workspaceId      String   @db.Uuid
   projectId        String   @db.Uuid
   teamId           String?  @db.Uuid
@@ -520,7 +520,7 @@ model UsageRollupHourly {
 }
 
 model UsageRollupDaily {
-  bucket           DateTime
+  bucket           DateTime @db.Timestamptz(3)
   workspaceId      String   @db.Uuid
   projectId        String   @db.Uuid
   teamId           String?  @db.Uuid
@@ -558,8 +558,8 @@ model Budget {
   softGracePct    Int          @default(10)
   timezone        String       @default("UTC")
   status          String       @default("ACTIVE")
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
 
   workspace     Workspace            @relation(fields: [workspaceId], references: [id])
   notifications BudgetNotification[]
@@ -572,10 +572,10 @@ model Budget {
 model BudgetNotification {
   id          String   @id @default(uuid(7)) @db.Uuid
   budgetId    String   @db.Uuid
-  periodStart DateTime
+  periodStart DateTime @db.Timestamptz(3)
   threshold   Int
   channel     String // email | slack | webhook
-  sentAt      DateTime @default(now())
+  sentAt      DateTime @default(now()) @db.Timestamptz(3)
 
   budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
 
@@ -592,9 +592,9 @@ model ExportJob {
   rowCount      Int?
   filePath      String?
   error         String?
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  expiresAt     DateTime? @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -613,10 +613,10 @@ model ScheduledReport {
   reportParams Json
   format       ReportFormat @default(CSV)
   recipients   Json // {emails:[], slackChannel?}
-  lastRunAt    DateTime?
+  lastRunAt    DateTime? @db.Timestamptz(3)
   status       String       @default("ACTIVE")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -625,7 +625,7 @@ model ScheduledReport {
 
 model AuditLog {
   id           String   @db.Uuid
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
   workspaceId  String   @db.Uuid
   actorUserId  String?  @db.Uuid
   actorType    String   @default("USER") // USER | SYSTEM | API_TOKEN
@@ -653,8 +653,8 @@ model SsoConnection {
   config      Json // encrypted secrets inside
   enforced    Boolean       @default(false)
   defaultRole WorkspaceRole @default(MEMBER)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -668,7 +668,7 @@ model SlackIntegration {
   encryptedBotToken Bytes
   defaultChannel    String?
   status            String   @default("ACTIVE")
-  createdAt         DateTime @default(now())
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -694,8 +694,8 @@ model License {
   keyText    String
   plan       String
   seats      Int
-  expiresAt  DateTime
-  verifiedAt DateTime @default(now())
+  expiresAt  DateTime @db.Timestamptz(3)
+  verifiedAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@map("license")
 }

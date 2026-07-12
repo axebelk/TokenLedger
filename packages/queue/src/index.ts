@@ -16,6 +16,7 @@ export const CONSUMER_GROUPS = {
 
 export const QUEUES = {
   exportCsv: "export-csv",
+  housekeeping: "housekeeping",
   notify: "notify",
   scheduledReport: "scheduled-report",
   pricingSync: "pricing-sync",
@@ -24,6 +25,12 @@ export const QUEUES = {
   budgetRefresh: "budget-refresh",
   budgetRollover: "budget-rollover",
   poolHealth: "pool-health",
+} as const;
+
+/** Named jobs on the housekeeping queue (repeatable). */
+export const HOUSEKEEPING = {
+  retention: "retention",
+  reconcile: "reconcile",
 } as const;
 
 export const CHANNELS = {

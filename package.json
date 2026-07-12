@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:infra": "docker compose -f docker-compose.dev.yml up -d",
+    "start:local": "node scripts/start-local.mjs",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
