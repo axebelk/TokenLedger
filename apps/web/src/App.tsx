@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./providers/auth-context.js";
 import { LoginPage, RegisterPage } from "./features/auth/AuthPages.js";
 import { AppShell } from "./app/AppShell.js";
 import { DashboardPage } from "./features/dashboard/DashboardPage.js";
+import { AnalyticsPage } from "./features/analytics/AnalyticsPage.js";
 import { UsagePage } from "./features/usage/UsagePage.js";
 import { KeysPage } from "./features/keys/KeysPage.js";
 import { ProjectsPage } from "./features/projects/ProjectsPage.js";
@@ -22,6 +23,7 @@ export function App() {
         <Route element={<RequireAuth />}>
           <Route path="/:ws" element={<RequireWorkspace />}>
             <Route index element={<DashboardPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="usage" element={<UsagePage />} />
             <Route path="keys" element={<KeysPage />} />
             <Route path="projects" element={<ProjectsPage />} />

@@ -3,6 +3,9 @@ import { z } from "zod";
 import { hasMinimumRole } from "@tokentrail/shared";
 import type { PrismaClient, Prisma } from "@tokentrail/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
+import {
+  DIMENSIONS, GRANULARITIES, METRICS, queryBreakdown, queryTimeseries, type ExplorerFilters,
+} from "./analytics-query.js";
 
 const summaryQuery = z.object({
   days: z.coerce.number().int().min(1).max(365).default(30),
@@ -12,6 +15,42 @@ const eventsQuery = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().optional(),
 });
+
+const filterFields = {
+  from: z.coerce.date(),
+  to: z.coerce.date(),
+  projectId: z.string().uuid().optional(),
+  teamId: z.string().uuid().optional(),
+  userId: z.string().uuid().optional(),
+  provider: z.enum(["ANTHROPIC", "OPENAI", "GEMINI", "MINIMAX", "OPENROUTER", "DEEPSEEK", "OLLAMA"]).optional(),
+  model: z.string().max(100).optional(),
+};
+
+const timeseriesQuery = z.object({
+  ...filterFields,
+  metric: z.enum(METRICS).default("cost"),
+  granularity: z.enum(GRANULARITIES).default("day"),
+  groupBy: z.enum(DIMENSIONS).optional(),
+});
+
+const breakdownQuery = z.object({
+  ...filterFields,
+  groupBy: z.enum(DIMENSIONS),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+function toFilters(q: {
+  projectId?: string | undefined; teamId?: string | undefined; userId?: string | undefined;
+  provider?: string | undefined; model?: string | undefined;
+}): ExplorerFilters {
+  return {
+    ...(q.projectId ? { projectId: q.projectId } : {}),
+    ...(q.teamId ? { teamId: q.teamId } : {}),
+    ...(q.userId ? { userId: q.userId } : {}),
+    ...(q.provider ? { provider: q.provider } : {}),
+    ...(q.model ? { model: q.model } : {}),
+  };
+}
 
 interface AnalyticsModuleOptions {
   prisma: PrismaClient;
@@ -29,9 +68,15 @@ export function registerAnalyticsModule(app: FastifyInstance, opts: AnalyticsMod
 
   /** MEMBERs see their own usage; ADMIN/OWNER/VIEWER see workspace-wide. */
   function scopeFilter(request: { wsCtx?: { role: string }; user?: { id: string } }) {
+    const uid = scopeUserId(request);
+    return uid ? { userId: uid } : {};
+  }
+
+  /** Returns the caller's id when their view must be scoped to own usage, else undefined. */
+  function scopeUserId(request: { wsCtx?: { role: string }; user?: { id: string } }): string | undefined {
     const role = request.wsCtx!.role;
     const wide = hasMinimumRole(role as never, "ADMIN") || role === "VIEWER";
-    return wide ? {} : { userId: request.user!.id };
+    return wide ? undefined : request.user!.id;
   }
 
   app.get("/workspaces/:ws/analytics/summary", { preHandler: member }, async (request) => {
@@ -128,6 +173,34 @@ export function registerAnalyticsModule(app: FastifyInstance, opts: AnalyticsMod
       data: page.map((e) => ({ ...e, costUsd: e.costUsd.toString() })),
       nextCursor: events.length > limit && last ? encodeCursor(last.occurredAt) : null,
     };
+  });
+
+  // ── Explorer: metric timeseries (optionally grouped) ──────────────────────
+  app.get("/workspaces/:ws/analytics/timeseries", { preHandler: member }, async (request) => {
+    const q = timeseriesQuery.parse(request.query ?? {});
+    const series = await queryTimeseries(prisma, {
+      workspaceId: request.wsCtx!.workspaceId,
+      from: q.from, to: q.to, metric: q.metric, granularity: q.granularity,
+      ...(q.groupBy ? { groupBy: q.groupBy } : {}),
+      filters: toFilters(q),
+      ...(scopeUserId(request) ? { scopeUserId: scopeUserId(request)! } : {}),
+    });
+    return {
+      meta: { metric: q.metric, granularity: q.granularity, currency: "USD", groupBy: q.groupBy ?? null },
+      series,
+    };
+  });
+
+  // ── Explorer: grouped breakdown table with share % ────────────────────────
+  app.get("/workspaces/:ws/analytics/breakdown", { preHandler: member }, async (request) => {
+    const q = breakdownQuery.parse(request.query ?? {});
+    const { rows, totalCostUsd } = await queryBreakdown(prisma, {
+      workspaceId: request.wsCtx!.workspaceId,
+      from: q.from, to: q.to, groupBy: q.groupBy, limit: q.limit,
+      filters: toFilters(q),
+      ...(scopeUserId(request) ? { scopeUserId: scopeUserId(request)! } : {}),
+    });
+    return { meta: { groupBy: q.groupBy, currency: "USD" }, rows, totalCostUsd };
   });
 }
 
