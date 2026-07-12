@@ -8,6 +8,8 @@ import { AnalyticsPage } from "./features/analytics/AnalyticsPage.js";
 import { UsagePage } from "./features/usage/UsagePage.js";
 import { KeysPage } from "./features/keys/KeysPage.js";
 import { ProjectsPage } from "./features/projects/ProjectsPage.js";
+import { TeamsPage } from "./features/teams/TeamsPage.js";
+import { TeamDetailPage } from "./features/teams/TeamDetailPage.js";
 import { ProvidersPage } from "./features/providers/ProvidersPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
@@ -27,6 +29,8 @@ export function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="keys" element={<KeysPage />} />
             <Route path="projects" element={<ProjectsPage />} />
+            <Route path="teams" element={<TeamsPage />} />
+            <Route path="teams/:teamId" element={<TeamDetailPage />} />
             <Route path="providers" element={<ProvidersPage />} />
             <Route path="members" element={<MembersPage />} />
           </Route>

@@ -21,6 +21,17 @@ export interface Project {
   description: string | null; tags: string[]; status: string; createdAt: string;
 }
 
+export interface Team {
+  id: string; name: string; slug: string; description: string | null;
+  memberCount: number; projectCount: number; createdAt: string;
+}
+export interface TeamMemberRow { id: string; name: string; email: string; role: string; joinedAt: string }
+export interface TeamDetail {
+  id: string; name: string; slug: string; description: string | null; createdAt: string;
+  members: TeamMemberRow[];
+  projects: { id: string; name: string; slug: string; status: string }[];
+}
+
 export interface Credential {
   id: string; provider: Provider; name: string; secretLast4: string | null;
   baseUrl: string | null; isDefault: boolean; status: string; createdAt: string;
@@ -104,8 +115,22 @@ export const wsApi = {
     api<TimeseriesResponse>(`/workspaces/${ws}/analytics/timeseries?${explorerQuery({ ...p })}`),
   breakdown: (ws: string, p: ExplorerParams & { groupBy: Dimension; limit?: number }) =>
     api<BreakdownResponse>(`/workspaces/${ws}/analytics/breakdown?${explorerQuery({ ...p })}`),
-  createProject: (ws: string, body: { name: string; description?: string }) =>
+  createProject: (ws: string, body: { name: string; description?: string; teamId?: string }) =>
     api<Project>(`/workspaces/${ws}/projects`, { method: "POST", body }),
+  updateProject: (ws: string, id: string, body: { teamId?: string | null; name?: string; status?: string }) =>
+    api<Project>(`/workspaces/${ws}/projects/${id}`, { method: "PATCH", body }),
+  teams: (ws: string) => api<{ data: Team[] }>(`/workspaces/${ws}/teams`),
+  team: (ws: string, id: string) => api<TeamDetail>(`/workspaces/${ws}/teams/${id}`),
+  createTeam: (ws: string, body: { name: string; description?: string }) =>
+    api<Team>(`/workspaces/${ws}/teams`, { method: "POST", body }),
+  deleteTeam: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/teams/${id}`, { method: "DELETE" }),
+  addTeamMember: (ws: string, teamId: string, body: { userId: string; role: string }) =>
+    api<TeamMemberRow>(`/workspaces/${ws}/teams/${teamId}/members`, { method: "POST", body }),
+  updateTeamMember: (ws: string, teamId: string, userId: string, role: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/teams/${teamId}/members/${userId}`, { method: "PATCH", body: { role } }),
+  removeTeamMember: (ws: string, teamId: string, userId: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/teams/${teamId}/members/${userId}`, { method: "DELETE" }),
   credentials: (ws: string) => api<{ data: Credential[] }>(`/workspaces/${ws}/credentials`),
   createCredential: (
     ws: string,

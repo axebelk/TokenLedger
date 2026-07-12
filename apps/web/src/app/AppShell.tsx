@@ -1,7 +1,7 @@
 import { Layout, Menu, Space, Typography, Button, Tag } from "antd";
 import {
   ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined,
-  KeyOutlined, TableOutlined, TeamOutlined,
+  KeyOutlined, TableOutlined, TeamOutlined, UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../providers/auth-context.js";
@@ -34,6 +34,7 @@ export function AppShell() {
             { key: "usage", icon: <TableOutlined />, label: <Link to={`/${ws}/usage`}>Usage</Link> },
             { key: "keys", icon: <KeyOutlined />, label: <Link to={`/${ws}/keys`}>Virtual Keys</Link> },
             { key: "projects", icon: <AppstoreOutlined />, label: <Link to={`/${ws}/projects`}>Projects</Link> },
+            { key: "teams", icon: <UsergroupAddOutlined />, label: <Link to={`/${ws}/teams`}>Teams</Link> },
             { key: "providers", icon: <ApiOutlined />, label: <Link to={`/${ws}/providers`}>Providers</Link> },
             { key: "members", icon: <TeamOutlined />, label: <Link to={`/${ws}/members`}>Members</Link> },
           ]}

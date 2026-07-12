@@ -12,6 +12,14 @@ const createProjectSchema = z.object({
   tags: z.array(z.string().max(40)).max(20).default([]),
 });
 
+const updateProjectSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  teamId: z.string().uuid().nullable().optional(), // null detaches the owning team
+  description: z.string().max(500).nullable().optional(),
+  tags: z.array(z.string().max(40)).max(20).optional(),
+  status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
+});
+
 interface OrgModuleOptions {
   prisma: PrismaClient;
   authenticate: preHandlerHookHandler;
@@ -78,6 +86,34 @@ export function registerOrgModule(app: FastifyInstance, opts: OrgModuleOptions):
       },
     });
     return reply.status(201).send(project);
+  });
+
+  app.patch("/workspaces/:ws/projects/:id", { preHandler: admin }, async (request) => {
+    const { id } = request.params as { id: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const body = updateProjectSchema.parse(request.body);
+
+    const project = await prisma.project.findFirst({ where: { id, workspaceId } });
+    if (!project) throw new NotFoundError("Project", id);
+    if (body.teamId) {
+      const team = await prisma.team.findFirst({ where: { id: body.teamId, workspaceId } });
+      if (!team) throw new NotFoundError("Team", body.teamId);
+    }
+
+    return prisma.project.update({
+      where: { id },
+      data: {
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.teamId !== undefined ? { teamId: body.teamId } : {}),
+        ...(body.description !== undefined ? { description: body.description } : {}),
+        ...(body.tags !== undefined ? { tags: body.tags } : {}),
+        ...(body.status !== undefined ? { status: body.status } : {}),
+      },
+      select: {
+        id: true, name: true, slug: true, teamId: true, description: true,
+        tags: true, status: true, createdAt: true,
+      },
+    });
   });
 }
 
