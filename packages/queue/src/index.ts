@@ -1,7 +1,7 @@
 import { Redis } from "ioredis";
-import { Queue } from "bullmq";
+import { Queue, Worker, type Job, type Processor } from "bullmq";
 
-export { Redis };
+export { Redis, Worker, Queue, type Job };
 import type { CostBasis, EventStatus, Provider } from "@tokentrail/shared";
 
 /** Single registry of stream/queue/channel names — no magic strings elsewhere. */
@@ -102,4 +102,13 @@ export async function publishUsageEvent(redis: Redis, event: UsageEventMessage):
 
 export function createQueue(name: string, redis: Redis): Queue {
   return new Queue(name, { connection: redis });
+}
+
+export function createWorker<T>(
+  name: string,
+  processor: Processor<T>,
+  redis: Redis,
+  concurrency = 2,
+): Worker<T> {
+  return new Worker<T>(name, processor, { connection: redis, concurrency });
 }

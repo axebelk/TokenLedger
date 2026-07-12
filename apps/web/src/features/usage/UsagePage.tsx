@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Button, Card, Table, Tag, Typography } from "antd";
+import { Button, Card, Space, Table, Tag, Typography } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { formatUsd, wsApi, type UsageEvent } from "../../api/endpoints.js";
+import { ExportsDrawer } from "./ExportsDrawer.js";
 
 export function UsagePage() {
   const { ws = "" } = useParams();
+  const [exportsOpen, setExportsOpen] = useState(false);
   const events = useInfiniteQuery({
     queryKey: [ws, "usage", "events"],
     queryFn: ({ pageParam }) => wsApi.events(ws, pageParam),
@@ -17,7 +21,17 @@ export function UsagePage() {
   const rows = events.data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
-    <Card title="Usage events" extra={<Typography.Text type="secondary">last 90 days · auto-refreshes</Typography.Text>}>
+    <Card
+      title="Usage events"
+      extra={
+        <Space>
+          <Typography.Text type="secondary">last 90 days · auto-refreshes</Typography.Text>
+          <Button icon={<DownloadOutlined />} onClick={() => setExportsOpen(true)}>
+            Export
+          </Button>
+        </Space>
+      }
+    >
       <Table<UsageEvent>
         rowKey="id"
         size="small"
@@ -78,6 +92,7 @@ export function UsagePage() {
           Load more
         </Button>
       )}
+      <ExportsDrawer ws={ws} open={exportsOpen} onClose={() => setExportsOpen(false)} />
     </Card>
   );
 }

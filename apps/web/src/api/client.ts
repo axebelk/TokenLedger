@@ -52,6 +52,27 @@ async function refreshOnce(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/** Fetches a file with auth (refreshing once on 401) and triggers a browser download. */
+export async function downloadAuthed(url: string, filename: string, isRetry = false): Promise<void> {
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: { ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) },
+  });
+  if (res.status === 401 && !isRetry) {
+    if (await refreshOnce()) return downloadAuthed(url, filename, true);
+    onSessionLost();
+    return;
+  }
+  if (!res.ok) throw new ApiError(res.status, "download_failed", `Download failed (${res.status})`);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export async function api<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},

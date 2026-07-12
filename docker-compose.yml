@@ -8,6 +8,7 @@ x-app-env: &app-env
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   NODE_ENV: production
+  EXPORTS_DIR: /data/exports
   LICENSE_KEY: ${LICENSE_KEY:-}
 
 services:
@@ -54,6 +55,7 @@ services:
       <<: *app-env
       API_PORT: "4000"
       SMTP_URL: ${SMTP_URL:-}
+    volumes: [exports:/data/exports] # shared with worker: reads generated CSVs for download
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
