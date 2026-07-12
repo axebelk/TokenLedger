@@ -67,14 +67,26 @@ export async function startMockProvider(): Promise<MockProvider> {
         return;
       }
 
+      // Universal usage object: Anthropic, OpenAI and Ollama fields coexist so
+      // one mock serves every adapter (each reads only its own fields).
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({
           id: "msg_mock",
           type: "message",
           model,
+          done: true,
           content: [{ type: "text", text: "Hello from mock" }],
-          usage: { input_tokens: 1000, output_tokens: 500 },
+          choices: [{ message: { role: "assistant", content: "Hello from mock" } }],
+          prompt_eval_count: 1000,
+          eval_count: 500,
+          usage: {
+            input_tokens: 1000,
+            output_tokens: 500,
+            prompt_tokens: 1000,
+            completion_tokens: 500,
+            prompt_tokens_details: { cached_tokens: 0 },
+          },
         }),
       );
     });

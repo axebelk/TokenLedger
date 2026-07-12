@@ -53,11 +53,22 @@ export class PgKeyStore implements KeyStore {
       userId: row.userId,
       status: row.status,
       ...(row.expiresAt ? { expiresAt: row.expiresAt } : {}),
-      providerAllowlist: row.providerAllowlist ?? [],
-      modelAllowlist: row.modelAllowlist ?? [],
+      // node-pg does not parse custom enum-array types (Provider[]); it hands
+      // back the raw array literal ("{ANTHROPIC,OPENAI}"), so parse defensively.
+      providerAllowlist: parsePgArray(row.providerAllowlist) as Provider[],
+      modelAllowlist: parsePgArray(row.modelAllowlist),
       ...(row.rpmLimit != null ? { rpmLimit: row.rpmLimit } : {}),
     };
   }
+}
+
+/** Coerce a node-pg array value (already-parsed array or "{a,b}" literal) to string[]. */
+export function parsePgArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value as string[];
+  if (typeof value !== "string") return [];
+  const inner = value.replace(/^\{|\}$/g, "");
+  if (inner.length === 0) return [];
+  return inner.split(",").map((item) => item.replace(/^"|"$/g, ""));
 }
 
 interface CredRow {
