@@ -6,7 +6,7 @@ import {
 import { PlusOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
-import { membersApi, wsApi, type VirtualKey } from "../../api/endpoints.js";
+import { ALL_PROVIDERS, membersApi, wsApi, type Provider, type VirtualKey } from "../../api/endpoints.js";
 import { CopyField } from "../../components/CopyField.js";
 
 export function KeysPage() {
@@ -102,7 +102,7 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
   const [form] = Form.useForm();
 
   const issue = useMutation({
-    mutationFn: (values: { projectId: string; name: string; userId?: string }) =>
+    mutationFn: (values: { projectId: string; name: string; userId?: string; providerAllowlist?: Provider[] }) =>
       wsApi.issueKey(ws, values),
     onSuccess: (created) => {
       setIssuedKey(created.key);
@@ -170,6 +170,20 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
                 label: `${m.name} (${m.email})`,
               }))}
               notFoundContent={members.isError ? "Only admins can assign to others" : undefined}
+            />
+          </Form.Item>
+          <Form.Item
+            name="providerAllowlist"
+            label="Restrict to providers (optional)"
+            extra="Leave empty to allow every configured provider; otherwise the key only works for the selected ones."
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="All providers"
+              options={ALL_PROVIDERS.map((p) => ({ value: p, label: p }))}
             />
           </Form.Item>
           <Form.Item name="name" label="Key name" rules={[{ required: true }]}>

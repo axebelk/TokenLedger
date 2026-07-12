@@ -139,8 +139,12 @@ export const wsApi = {
   testCredential: (ws: string, id: string) =>
     api<{ ok: boolean | null; checked: boolean; httpStatus?: number; message?: string }>(
       `/workspaces/${ws}/credentials/${id}/test`, { method: "POST" }),
+  updateCredential: (ws: string, id: string, body: { status?: "ACTIVE" | "DISABLED"; isDefault?: true }) =>
+    api<Credential>(`/workspaces/${ws}/credentials/${id}`, { method: "PATCH", body }),
+  deleteCredential: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/credentials/${id}`, { method: "DELETE" }),
   keys: (ws: string) => api<{ data: VirtualKey[] }>(`/workspaces/${ws}/keys`),
-  issueKey: (ws: string, body: { projectId: string; name: string; userId?: string; expiresAt?: string }) =>
+  issueKey: (ws: string, body: { projectId: string; name: string; userId?: string; providerAllowlist?: Provider[]; expiresAt?: string }) =>
     api<VirtualKey & { key: string }>(`/workspaces/${ws}/keys`, { method: "POST", body }),
   revokeKey: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/keys/${id}/revoke`, { method: "POST" }),

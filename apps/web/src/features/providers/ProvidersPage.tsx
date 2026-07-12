@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Card, Drawer, Form, Input, Select, Space, Table, Tag, message,
+  Alert, Button, Card, Drawer, Form, Input, Popconfirm, Select, Space, Table, Tag, message,
 } from "antd";
 import { PlusOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
@@ -15,6 +15,7 @@ export function ProvidersPage() {
   const queryClient = useQueryClient();
   const credentials = useQuery({ queryKey: [ws, "credentials"], queryFn: () => wsApi.credentials(ws) });
   const [open, setOpen] = useState(false);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [ws, "credentials"] });
 
   const test = useMutation({
     mutationFn: (id: string) => wsApi.testCredential(ws, id),
@@ -23,6 +24,16 @@ export function ProvidersPage() {
       else if (result.ok === false) void message.error(result.message ?? `Failed (${result.httpStatus})`);
       else void message.info(result.message ?? "No live probe for this provider yet");
     },
+  });
+  const toggle = useMutation({
+    mutationFn: (c: Credential) =>
+      wsApi.updateCredential(ws, c.id, { status: c.status === "ACTIVE" ? "DISABLED" : "ACTIVE" }),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => wsApi.deleteCredential(ws, id),
+    onSuccess: () => { void message.success("Credential deleted"); void invalidate(); },
+    onError: (err) => void message.error(err instanceof ApiError ? err.message : "Delete failed"),
   });
 
   return (
@@ -55,20 +66,42 @@ export function ProvidersPage() {
           },
           { title: "Base URL", dataIndex: "baseUrl", render: (v: string | null) => v ?? "—" },
           {
-            title: "Default", dataIndex: "isDefault",
-            render: (v: boolean) => (v ? <Tag color="green">default</Tag> : null),
+            title: "Status", dataIndex: "status",
+            render: (status: string, c) => (
+              <Space>
+                <Tag color={status === "ACTIVE" ? "green" : "default"}>{status}</Tag>
+                {c.isDefault && <Tag color="blue">default</Tag>}
+              </Space>
+            ),
           },
           {
             title: "",
+            width: 260,
             render: (_, credential) => (
-              <Button
-                size="small"
-                icon={<ThunderboltOutlined />}
-                loading={test.isPending && test.variables === credential.id}
-                onClick={() => test.mutate(credential.id)}
-              >
-                Test
-              </Button>
+              <Space>
+                <Button
+                  size="small"
+                  icon={<ThunderboltOutlined />}
+                  loading={test.isPending && test.variables === credential.id}
+                  onClick={() => test.mutate(credential.id)}
+                >
+                  Test
+                </Button>
+                <Button
+                  size="small"
+                  loading={toggle.isPending && toggle.variables?.id === credential.id}
+                  onClick={() => toggle.mutate(credential)}
+                >
+                  {credential.status === "ACTIVE" ? "Disable" : "Enable"}
+                </Button>
+                <Popconfirm
+                  title="Delete this credential?"
+                  description="Historical usage is kept. The provider key is removed from the vault."
+                  onConfirm={() => remove.mutate(credential.id)}
+                >
+                  <Button size="small" danger>Delete</Button>
+                </Popconfirm>
+              </Space>
             ),
           },
         ]}
