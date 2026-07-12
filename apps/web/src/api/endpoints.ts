@@ -70,7 +70,19 @@ export const authApi = {
   login: (body: { email: string; password: string }) =>
     api<{ accessToken: string; user: User }>("/auth/login", { method: "POST", body }),
   logout: () => api<{ ok: boolean }>("/auth/logout", { method: "POST" }),
-  me: () => api<{ user: User; memberships: Membership[] }>("/auth/me"),
+  me: () => api<{ user: User; isSuperAdmin: boolean; memberships: Membership[] }>("/auth/me"),
+};
+
+export interface PlatformStats {
+  workspaces: number; users: number; activeKeys: number; requests30d: number; costUsd30d: string;
+}
+export interface PlatformWorkspace {
+  id: string; name: string; slug: string; createdAt: string;
+  members: number; projects: number; requests30d: number; costUsd30d: string;
+}
+export const adminApi = {
+  stats: () => api<PlatformStats>("/admin/stats"),
+  workspaces: () => api<{ data: PlatformWorkspace[] }>("/admin/workspaces"),
 };
 
 export type Metric = "cost" | "requests" | "tokens" | "errors";
@@ -117,8 +129,12 @@ export const wsApi = {
     api<BreakdownResponse>(`/workspaces/${ws}/analytics/breakdown?${explorerQuery({ ...p })}`),
   createProject: (ws: string, body: { name: string; description?: string; teamId?: string }) =>
     api<Project>(`/workspaces/${ws}/projects`, { method: "POST", body }),
+  projectsByStatus: (ws: string, status: "ACTIVE" | "ARCHIVED") =>
+    api<{ data: Project[] }>(`/workspaces/${ws}/projects?status=${status}`),
   updateProject: (ws: string, id: string, body: { teamId?: string | null; name?: string; status?: string }) =>
     api<Project>(`/workspaces/${ws}/projects/${id}`, { method: "PATCH", body }),
+  deleteProject: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/projects/${id}`, { method: "DELETE" }),
   teams: (ws: string) => api<{ data: Team[] }>(`/workspaces/${ws}/teams`),
   team: (ws: string, id: string) => api<TeamDetail>(`/workspaces/${ws}/teams/${id}`),
   createTeam: (ws: string, body: { name: string; description?: string }) =>

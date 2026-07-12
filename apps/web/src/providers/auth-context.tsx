@@ -7,6 +7,7 @@ import { authApi, type Membership, type User } from "../api/endpoints.js";
 interface AuthState {
   status: "loading" | "anonymous" | "authenticated";
   user: User | null;
+  isSuperAdmin: boolean;
   memberships: Membership[];
   login(email: string, password: string): Promise<void>;
   register(body: { email: string; password: string; name: string; workspaceName?: string }): Promise<string>;
@@ -19,11 +20,13 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthState["status"]>("loading");
   const [user, setUser] = useState<User | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [memberships, setMemberships] = useState<Membership[]>([]);
 
   const becomeAnonymous = useCallback(() => {
     setAccessToken(null);
     setUser(null);
+    setIsSuperAdmin(false);
     setMemberships([]);
     setStatus("anonymous");
   }, []);
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadMe = useCallback(async () => {
     const me = await authApi.me();
     setUser(me.user);
+    setIsSuperAdmin(me.isSuperAdmin);
     setMemberships(me.memberships);
     setStatus("authenticated");
   }, []);
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      isSuperAdmin,
       memberships,
       async login(email, password) {
         const res = await authApi.login({ email, password });
@@ -65,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       reloadMemberships: loadMe,
     }),
-    [status, user, memberships, loadMe, becomeAnonymous],
+    [status, user, isSuperAdmin, memberships, loadMe, becomeAnonymous],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

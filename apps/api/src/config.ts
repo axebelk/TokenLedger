@@ -10,6 +10,8 @@ const apiEnv = baseEnv
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     JWT_SECRET: z.string().min(32).optional(),
     TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
+    // Comma-separated emails granted instance-level super-admin (cross-workspace).
+    SUPERADMIN_EMAILS: z.string().optional(),
   })
   .transform((env, ctx) => {
     let jwtSecret = env.JWT_SECRET;

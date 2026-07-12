@@ -97,6 +97,17 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
     enabled: open,
     retry: false, // members without admin access can only issue to themselves
   });
+  const credentials = useQuery({
+    queryKey: [ws, "credentials"],
+    queryFn: () => wsApi.credentials(ws),
+    enabled: open,
+    retry: false,
+  });
+  // Only offer providers that are actually configured (have an active credential).
+  const configuredProviders = [
+    ...new Set((credentials.data?.data ?? []).filter((c) => c.status === "ACTIVE").map((c) => c.provider)),
+  ];
+  const providerOptions = configuredProviders.length > 0 ? configuredProviders : ALL_PROVIDERS;
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [form] = Form.useForm();
@@ -182,8 +193,8 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
               allowClear
               showSearch
               optionFilterProp="label"
-              placeholder="All providers"
-              options={ALL_PROVIDERS.map((p) => ({ value: p, label: p }))}
+              placeholder="All configured providers"
+              options={providerOptions.map((p) => ({ value: p, label: p }))}
             />
           </Form.Item>
           <Form.Item name="name" label="Key name" rules={[{ required: true }]}>

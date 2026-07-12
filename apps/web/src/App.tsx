@@ -14,6 +14,7 @@ import { ProvidersPage } from "./features/providers/ProvidersPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
 import { SetupPage } from "./features/setup/SetupPage.js";
+import { PlatformPage } from "./features/admin/PlatformPage.js";
 
 export function App() {
   return (
@@ -24,6 +25,7 @@ export function App() {
         <Route path="/invite/:token" element={<AcceptInvitePage />} />
         <Route path="/" element={<HomeRedirect />} />
         <Route element={<RequireAuth />}>
+          <Route path="/admin" element={<PlatformPage />} />
           <Route path="/:ws" element={<RequireWorkspace />}>
             <Route index element={<DashboardPage />} />
             <Route path="setup" element={<SetupPage />} />

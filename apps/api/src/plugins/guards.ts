@@ -78,3 +78,22 @@ export function makeWorkspaceGuard(
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
+
+/** Parse the SUPERADMIN_EMAILS config into a lowercased set. */
+export function parseSuperAdmins(raw: string | undefined): Set<string> {
+  return new Set((raw ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean));
+}
+
+export function isSuperAdmin(email: string | undefined, admins: Set<string>): boolean {
+  return email != null && admins.has(email.toLowerCase());
+}
+
+/** preHandler: requires the authenticated user to be an instance super-admin. */
+export function makeSuperAdminGuard(admins: Set<string>): preHandlerHookHandler {
+  return async (request: FastifyRequest) => {
+    if (!request.user) throw new UnauthorizedError();
+    if (!isSuperAdmin(request.user.email, admins)) {
+      throw new ForbiddenError("Instance super-admin access required");
+    }
+  };
+}

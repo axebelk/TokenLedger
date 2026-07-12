@@ -1,6 +1,6 @@
 import { Layout, Menu, Space, Typography, Button, Tag } from "antd";
 import {
-  ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined,
+  ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined, GlobalOutlined,
   KeyOutlined, RocketOutlined, TableOutlined, TeamOutlined, UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
@@ -10,7 +10,7 @@ const { Sider, Header, Content } = Layout;
 
 export function AppShell() {
   const { ws } = useParams<{ ws: string }>();
-  const { user, memberships, logout } = useAuth();
+  const { user, isSuperAdmin, memberships, logout } = useAuth();
   const location = useLocation();
 
   const current = memberships.find((m) => m.workspace.slug === ws);
@@ -53,6 +53,11 @@ export function AppShell() {
             {current && <Tag>{current.role}</Tag>}
           </Space>
           <Space>
+            {isSuperAdmin && (
+              <Link to="/admin">
+                <Button size="small" icon={<GlobalOutlined />}>Platform</Button>
+              </Link>
+            )}
             <Typography.Text type="secondary">{user?.email}</Typography.Text>
             <Button size="small" onClick={() => void logout()}>
               Sign out

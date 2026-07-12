@@ -10,6 +10,7 @@ x-app-env: &app-env
   NODE_ENV: production
   EXPORTS_DIR: /data/exports
   EVENT_RETENTION_DAYS: ${EVENT_RETENTION_DAYS:-90}
+  SUPERADMIN_EMAILS: ${SUPERADMIN_EMAILS:-}
   LICENSE_KEY: ${LICENSE_KEY:-}
 
 services:
