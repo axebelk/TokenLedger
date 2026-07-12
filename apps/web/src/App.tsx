@@ -13,6 +13,7 @@ import { TeamDetailPage } from "./features/teams/TeamDetailPage.js";
 import { ProvidersPage } from "./features/providers/ProvidersPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
+import { SetupPage } from "./features/setup/SetupPage.js";
 
 export function App() {
   return (
@@ -25,6 +26,7 @@ export function App() {
         <Route element={<RequireAuth />}>
           <Route path="/:ws" element={<RequireWorkspace />}>
             <Route index element={<DashboardPage />} />
+            <Route path="setup" element={<SetupPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="usage" element={<UsagePage />} />
             <Route path="keys" element={<KeysPage />} />

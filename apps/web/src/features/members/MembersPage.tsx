@@ -8,6 +8,7 @@ import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { membersApi, type Invitation, type Member } from "../../api/endpoints.js";
 import { ApiError } from "../../api/client.js";
+import { CopyField } from "../../components/CopyField.js";
 
 const ROLE_COLORS: Record<string, string> = {
   OWNER: "gold", ADMIN: "geekblue", MEMBER: "default", VIEWER: "purple",
@@ -102,45 +103,70 @@ function InviteModal({
   ws, open, onClose, onInvited,
 }: { ws: string; open: boolean; onClose: () => void; onInvited: () => void }) {
   const [error, setError] = useState<string | null>(null);
+  const [link, setLink] = useState<{ email: string; url: string } | null>(null);
   const [form] = Form.useForm();
   const invite = useMutation({
     mutationFn: (values: { email: string; role: string }) => membersApi.invite(ws, values),
-    onSuccess: () => {
+    onSuccess: (created, values) => {
       form.resetFields();
       setError(null);
+      setLink({ email: values.email, url: created.acceptUrl });
       onInvited();
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to send invite"),
   });
 
+  const close = () => {
+    setLink(null);
+    setError(null);
+    onClose();
+  };
+
   return (
-    <Modal title="Invite a teammate" open={open} onCancel={onClose} footer={null}>
-      {error && <Alert type="error" message={error} style={{ marginBottom: 16 }} />}
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ role: "MEMBER" }}
-        onFinish={(values: { email: string; role: string }) => invite.mutate(values)}
-      >
-        <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
-          <Input placeholder="teammate@company.com" />
-        </Form.Item>
-        <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { value: "ADMIN", label: "Admin — manage everything but billing" },
-              { value: "MEMBER", label: "Member — issue keys, see own usage" },
-              { value: "VIEWER", label: "Viewer — read-only analytics" },
-            ]}
+    <Modal title="Invite a teammate" open={open} onCancel={close} footer={null}>
+      {link ? (
+        <Space direction="vertical" style={{ width: "100%" }}>
+          <Alert
+            type="success"
+            message={`Invitation created for ${link.email}`}
+            description="Share this link with them — it works even without email, and is valid for 7 days."
           />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" loading={invite.isPending} block>
-          Send invitation
-        </Button>
-      </Form>
-      <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
-        They'll receive an email with an accept link, valid for 7 days.
-      </Typography.Paragraph>
+          <CopyField value={link.url} />
+          <Button type="primary" block onClick={() => setLink(null)}>
+            Invite another
+          </Button>
+          <Button block onClick={close}>Done</Button>
+        </Space>
+      ) : (
+        <>
+          {error && <Alert type="error" message={error} style={{ marginBottom: 16 }} />}
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{ role: "MEMBER" }}
+            onFinish={(values: { email: string; role: string }) => invite.mutate(values)}
+          >
+            <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
+              <Input placeholder="teammate@company.com" />
+            </Form.Item>
+            <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+              <Select
+                options={[
+                  { value: "ADMIN", label: "Admin — manage everything but billing" },
+                  { value: "MEMBER", label: "Member — issue keys, see own usage" },
+                  { value: "VIEWER", label: "Viewer — read-only analytics" },
+                ]}
+              />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" loading={invite.isPending} block>
+              Send invitation
+            </Button>
+          </Form>
+          <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
+            An email is sent if SMTP is configured; either way you'll get a copyable invite link next.
+          </Typography.Paragraph>
+        </>
+      )}
     </Modal>
   );
 }

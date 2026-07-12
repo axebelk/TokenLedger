@@ -92,7 +92,9 @@ export function registerInvitationsModule(app: FastifyInstance, opts: Invitation
       request.log.error({ err }, "invitation email failed to send");
     });
 
-    return reply.status(201).send(invitation);
+    // Return the accept link so an admin can copy/share it directly — essential
+    // when SMTP isn't configured. This is the only time the token is exposed.
+    return reply.status(201).send({ ...invitation, acceptUrl });
   });
 
   app.delete("/workspaces/:ws/invitations/:id", { preHandler: admin }, async (request) => {

@@ -1,7 +1,7 @@
 import { Layout, Menu, Space, Typography, Button, Tag } from "antd";
 import {
   ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined,
-  KeyOutlined, TableOutlined, TeamOutlined, UsergroupAddOutlined,
+  KeyOutlined, RocketOutlined, TableOutlined, TeamOutlined, UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../providers/auth-context.js";
@@ -30,6 +30,7 @@ export function AppShell() {
           selectedKeys={[section]}
           items={[
             { key: "dashboard", icon: <DashboardOutlined />, label: <Link to={`/${ws}`}>Dashboard</Link> },
+            { key: "setup", icon: <RocketOutlined />, label: <Link to={`/${ws}/setup`}>Connect</Link> },
             { key: "analytics", icon: <BarChartOutlined />, label: <Link to={`/${ws}/analytics`}>Analytics</Link> },
             { key: "usage", icon: <TableOutlined />, label: <Link to={`/${ws}/usage`}>Usage</Link> },
             { key: "keys", icon: <KeyOutlined />, label: <Link to={`/${ws}/keys`}>Virtual Keys</Link> },

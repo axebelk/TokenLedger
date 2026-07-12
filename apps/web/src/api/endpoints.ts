@@ -165,7 +165,7 @@ export const membersApi = {
   list: (ws: string) => api<{ data: Member[] }>(`/workspaces/${ws}/members`),
   invitations: (ws: string) => api<{ data: Invitation[] }>(`/workspaces/${ws}/invitations`),
   invite: (ws: string, body: { email: string; role: string }) =>
-    api<Invitation>(`/workspaces/${ws}/invitations`, { method: "POST", body }),
+    api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations`, { method: "POST", body }),
   revokeInvite: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/invitations/${id}`, { method: "DELETE" }),
 };
