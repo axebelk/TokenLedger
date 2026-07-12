@@ -1,0 +1,14 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "ee/*"
+# Single ioredis instance across the workspace (bullmq pins its own otherwise,
+# which splits the Redis type and breaks Queue connection typing).
+overrides:
+  ioredis: ^5.11.1
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true

@@ -1,0 +1,68 @@
+import { Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { Spin } from "antd";
+import { AuthProvider, useAuth } from "./providers/auth-context.js";
+import { LoginPage, RegisterPage } from "./features/auth/AuthPages.js";
+import { AppShell } from "./app/AppShell.js";
+import { DashboardPage } from "./features/dashboard/DashboardPage.js";
+import { UsagePage } from "./features/usage/UsagePage.js";
+import { KeysPage } from "./features/keys/KeysPage.js";
+import { ProjectsPage } from "./features/projects/ProjectsPage.js";
+import { ProvidersPage } from "./features/providers/ProvidersPage.js";
+import { MembersPage } from "./features/members/MembersPage.js";
+import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
+
+export function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/invite/:token" element={<AcceptInvitePage />} />
+        <Route path="/" element={<HomeRedirect />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/:ws" element={<RequireWorkspace />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="usage" element={<UsagePage />} />
+            <Route path="keys" element={<KeysPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="providers" element={<ProvidersPage />} />
+            <Route path="members" element={<MembersPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </AuthProvider>
+  );
+}
+
+function CenteredSpin() {
+  return (
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+      <Spin size="large" />
+    </div>
+  );
+}
+
+function RequireAuth() {
+  const { status } = useAuth();
+  if (status === "loading") return <CenteredSpin />;
+  if (status === "anonymous") return <Navigate to="/login" replace />;
+  return <AppShell />;
+}
+
+/** Unknown workspace slugs bounce home instead of rendering an empty shell. */
+function RequireWorkspace() {
+  const { ws } = useParams<{ ws: string }>();
+  const { memberships, status } = useAuth();
+  if (status === "loading") return <CenteredSpin />;
+  const known = memberships.some((m) => m.workspace.slug === ws);
+  if (!known) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
+function HomeRedirect() {
+  const { status, memberships } = useAuth();
+  if (status === "loading") return <CenteredSpin />;
+  if (status === "anonymous") return <Navigate to="/login" replace />;
+  const first = memberships[0]?.workspace.slug;
+  return first ? <Navigate to={`/${first}`} replace /> : <Navigate to="/register" replace />;
+}

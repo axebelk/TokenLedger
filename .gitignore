@@ -1,0 +1,25 @@
+node_modules/
+dist/
+generated/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+!.env.example
+
+# Prisma
+packages/db/generated/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local data
+backups/
+exports/
+logs/

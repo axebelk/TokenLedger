@@ -1,0 +1,29 @@
+{
+  "name": "tokentrail",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TokenTrail — open-source AI cost governance and usage analytics platform",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@11.12.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:infra": "docker compose -f docker-compose.dev.yml up -d",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @tokentrail/db generate",
+    "db:migrate": "pnpm --filter @tokentrail/db migrate:dev",
+    "db:deploy": "pnpm --filter @tokentrail/db migrate:deploy",
+    "db:seed": "pnpm --filter @tokentrail/db seed",
+    "db:studio": "pnpm --filter @tokentrail/db studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}

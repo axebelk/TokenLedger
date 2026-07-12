@@ -1,0 +1,609 @@
+# TokenTrail Control-Plane API — OpenAPI 3.1 (representative core; full spec generated
+# from zod route schemas via fastify-zod-openapi and served at /api/docs)
+openapi: 3.1.0
+info:
+  title: TokenTrail API
+  version: 1.0.0
+  description: >
+    Control-plane REST API for TokenTrail, the open-source AI cost governance and
+    usage analytics platform. Gateway (data-plane) routes under /gw are documented
+    separately per provider surface.
+  license: { name: Apache-2.0, identifier: Apache-2.0 }
+servers:
+  - url: /api/v1
+tags:
+  - { name: Auth }
+  - { name: Workspaces }
+  - { name: Teams }
+  - { name: Projects }
+  - { name: Credentials }
+  - { name: VirtualKeys }
+  - { name: Analytics }
+  - { name: Budgets }
+  - { name: Reports }
+  - { name: Enterprise }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Access token issued; refresh token set as httpOnly cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  user: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Problem" }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user and workspace memberships
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  memberships:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        workspace: { $ref: "#/components/schemas/Workspace" }
+                        role: { $ref: "#/components/schemas/WorkspaceRole" }
+
+  /workspaces:
+    post:
+      tags: [Workspaces]
+      summary: Create a workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+                slug: { type: string, pattern: "^[a-z0-9-]{3,50}$" }
+      responses:
+        "201": { $ref: "#/components/responses/WorkspaceResponse" }
+
+  /workspaces/{ws}:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    get:
+      tags: [Workspaces]
+      summary: Get workspace
+      responses:
+        "200": { $ref: "#/components/responses/WorkspaceResponse" }
+    patch:
+      tags: [Workspaces]
+      summary: Update workspace settings (ADMIN)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                settings:
+                  type: object
+                  properties:
+                    failurePolicy: { type: string, enum: [FAIL_OPEN, FAIL_CLOSED] }
+                    memberAnalytics: { type: boolean }
+      responses:
+        "200": { $ref: "#/components/responses/WorkspaceResponse" }
+
+  /workspaces/{ws}/invitations:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    post:
+      tags: [Workspaces]
+      summary: Invite a user (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: "#/components/schemas/WorkspaceRole" }
+                teamId: { type: string, format: uuid }
+      responses:
+        "201": { description: Invitation created and emailed }
+
+  /workspaces/{ws}/teams:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    get:
+      tags: [Teams]
+      summary: List teams
+      parameters: [{ $ref: "#/components/parameters/limit" }, { $ref: "#/components/parameters/cursor" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/Team" } }
+    post:
+      tags: [Teams]
+      summary: Create team (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                slug: { type: string }
+                description: { type: string }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Team" } } } }
+
+  /workspaces/{ws}/projects:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    get:
+      tags: [Projects]
+      summary: List projects
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [ACTIVE, ARCHIVED] } }
+        - { name: teamId, in: query, schema: { type: string, format: uuid } }
+        - { $ref: "#/components/parameters/limit" }
+        - { $ref: "#/components/parameters/cursor" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/Project" } }
+    post:
+      tags: [Projects]
+      summary: Create project (ADMIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                slug: { type: string }
+                teamId: { type: string, format: uuid }
+                description: { type: string }
+                tags: { type: array, items: { type: string } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+
+  /workspaces/{ws}/credentials:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    post:
+      tags: [Credentials]
+      summary: Add a provider credential (ADMIN). Secret is write-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, name]
+              properties:
+                provider: { $ref: "#/components/schemas/Provider" }
+                name: { type: string }
+                secret: { type: string, writeOnly: true }
+                baseUrl: { type: string, format: uri, description: "Required for OLLAMA; optional elsewhere" }
+                modelAllowlist: { type: array, items: { type: string } }
+                isDefault: { type: boolean }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Credential" } } } }
+
+  /workspaces/{ws}/keys:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    post:
+      tags: [VirtualKeys]
+      summary: Issue a virtual key. Full key is returned exactly once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, name]
+              properties:
+                projectId: { type: string, format: uuid }
+                userId: { type: string, format: uuid, description: "ADMIN may issue for another user; defaults to caller" }
+                name: { type: string }
+                providerAllowlist: { type: array, items: { $ref: "#/components/schemas/Provider" } }
+                modelAllowlist: { type: array, items: { type: string } }
+                rpmLimit: { type: integer, minimum: 1 }
+                expiresAt: { type: string, format: date-time }
+      responses:
+        "201":
+          description: Created — `key` is shown only in this response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/VirtualKey"
+                  - properties:
+                      key: { type: string, example: "tt_live_9xQ2…" }
+
+  /workspaces/{ws}/keys/{keyId}/revoke:
+    parameters:
+      - { $ref: "#/components/parameters/ws" }
+      - { name: keyId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [VirtualKeys]
+      summary: Revoke a key (takes effect at gateway within 5 s)
+      responses:
+        "200": { description: Revoked }
+
+  /workspaces/{ws}/analytics/summary:
+    parameters:
+      - { $ref: "#/components/parameters/ws" }
+      - { $ref: "#/components/parameters/from" }
+      - { $ref: "#/components/parameters/to" }
+    get:
+      tags: [Analytics]
+      summary: Headline totals with previous-period comparison
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  costUsd: { $ref: "#/components/schemas/MetricWithDelta" }
+                  requests: { $ref: "#/components/schemas/MetricWithDelta" }
+                  tokens: { $ref: "#/components/schemas/MetricWithDelta" }
+                  errorRate: { $ref: "#/components/schemas/MetricWithDelta" }
+                  activeUsers: { type: integer }
+                  activeProjects: { type: integer }
+                  unpricedModels: { type: array, items: { type: string } }
+
+  /workspaces/{ws}/analytics/timeseries:
+    parameters:
+      - { $ref: "#/components/parameters/ws" }
+      - { $ref: "#/components/parameters/from" }
+      - { $ref: "#/components/parameters/to" }
+      - { name: metric, in: query, required: true,
+          schema: { type: string, enum: [cost, requests, tokens, errors, latencyP95] } }
+      - { name: granularity, in: query, schema: { type: string, enum: [hour, day, week, month], default: day } }
+      - { name: groupBy, in: query, schema: { type: string, enum: [project, team, user, provider, model] } }
+      - { name: projectId, in: query, schema: { type: string, format: uuid } }
+      - { name: provider, in: query, schema: { $ref: "#/components/schemas/Provider" } }
+    get:
+      tags: [Analytics]
+      summary: Metric timeseries, optionally grouped by one dimension
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    type: object
+                    properties:
+                      metric: { type: string }
+                      granularity: { type: string }
+                      currency: { type: string, example: USD }
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: object, additionalProperties: true }
+                        points:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              t: { type: string, format: date-time }
+                              v: { type: number }
+
+  /workspaces/{ws}/analytics/breakdown:
+    parameters:
+      - { $ref: "#/components/parameters/ws" }
+      - { $ref: "#/components/parameters/from" }
+      - { $ref: "#/components/parameters/to" }
+      - { name: groupBy, in: query, required: true,
+          schema: { type: string, enum: [project, team, user, provider, model] } }
+    get:
+      tags: [Analytics]
+      summary: Grouped totals table (cost, tokens, requests, share %)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: object, additionalProperties: true }
+                        costUsd: { type: number }
+                        requests: { type: integer }
+                        inputTokens: { type: integer }
+                        outputTokens: { type: integer }
+                        errorRate: { type: number }
+                        sharePct: { type: number }
+                  totalCostUsd: { type: number }
+
+  /workspaces/{ws}/budgets:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    post:
+      tags: [Budgets]
+      summary: Create budget (enforcement SOFT/HARD requires enterprise license)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BudgetInput" }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Budget" } } } }
+        "402": { description: Enforcement mode requires enterprise license, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /workspaces/{ws}/budgets/status:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    get:
+      tags: [Budgets]
+      summary: Live status of all budgets
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BudgetStatus" }
+
+  /workspaces/{ws}/exports:
+    parameters: [{ $ref: "#/components/parameters/ws" }]
+    post:
+      tags: [Reports]
+      summary: Create an async CSV export job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind: { type: string, enum: [usage_events, breakdown, timeseries] }
+                params: { type: object, additionalProperties: true }
+      responses:
+        "202":
+          description: Job accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExportJob" }
+
+  /workspaces/{ws}/audit-logs:
+    parameters:
+      - { $ref: "#/components/parameters/ws" }
+      - { name: action, in: query, schema: { type: string } }
+      - { name: actorUserId, in: query, schema: { type: string, format: uuid } }
+      - { $ref: "#/components/parameters/from" }
+      - { $ref: "#/components/parameters/to" }
+    get:
+      tags: [Enterprise]
+      summary: Search audit logs (EE, ADMIN)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - properties:
+                      data: { type: array, items: { $ref: "#/components/schemas/AuditLog" } }
+        "402": { description: Requires enterprise license }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: "JWT or ttp_ personal access token" }
+
+  parameters:
+    ws: { name: ws, in: path, required: true, schema: { type: string }, description: Workspace id or slug }
+    limit: { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+    cursor: { name: cursor, in: query, schema: { type: string } }
+    from: { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+    to: { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+
+  responses:
+    Problem:
+      description: Error (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    WorkspaceResponse:
+      description: Workspace
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Workspace" }
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        requestId: { type: string }
+        errors:
+          type: array
+          items: { type: object, properties: { path: { type: string }, message: { type: string } } }
+
+    Page:
+      type: object
+      properties:
+        data: { type: array, items: {} }
+        nextCursor: { type: [string, "null"] }
+
+    WorkspaceRole: { type: string, enum: [OWNER, ADMIN, MEMBER, VIEWER] }
+    Provider: { type: string, enum: [ANTHROPIC, OPENAI, GEMINI, MINIMAX, OPENROUTER, DEEPSEEK, OLLAMA] }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        status: { type: string, enum: [ACTIVE, DEACTIVATED] }
+
+    Workspace:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        settings: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+
+    Team:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, "null"] }
+        memberCount: { type: integer }
+
+    Project:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        teamId: { type: [string, "null"], format: uuid }
+        tags: { type: array, items: { type: string } }
+        status: { type: string, enum: [ACTIVE, ARCHIVED] }
+
+    Credential:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        provider: { $ref: "#/components/schemas/Provider" }
+        name: { type: string }
+        secretLast4: { type: [string, "null"] }
+        baseUrl: { type: [string, "null"] }
+        isDefault: { type: boolean }
+        status: { type: string, enum: [ACTIVE, DISABLED] }
+
+    VirtualKey:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        keyLast4: { type: string }
+        projectId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        providerAllowlist: { type: array, items: { $ref: "#/components/schemas/Provider" } }
+        status: { type: string, enum: [ACTIVE, REVOKED, EXPIRED] }
+        expiresAt: { type: [string, "null"], format: date-time }
+        lastUsedAt: { type: [string, "null"], format: date-time }
+
+    MetricWithDelta:
+      type: object
+      properties:
+        value: { type: number }
+        previous: { type: number }
+        deltaPct: { type: [number, "null"] }
+
+    BudgetInput:
+      type: object
+      required: [scopeType, scopeId, period, amountUsd]
+      properties:
+        scopeType: { type: string, enum: [WORKSPACE, TEAM, PROJECT, USER] }
+        scopeId: { type: string, format: uuid }
+        period: { type: string, enum: [DAILY, WEEKLY, MONTHLY, QUARTERLY] }
+        amountUsd: { type: number, exclusiveMinimum: 0 }
+        alertThresholds: { type: array, items: { type: integer }, default: [50, 80, 100] }
+        enforcement: { type: string, enum: [ALERT, SOFT, HARD], default: ALERT }
+        timezone: { type: string, default: UTC }
+
+    Budget:
+      allOf:
+        - $ref: "#/components/schemas/BudgetInput"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+
+    BudgetStatus:
+      type: object
+      properties:
+        budgetId: { type: string, format: uuid }
+        scopeType: { type: string }
+        scopeName: { type: string }
+        amountUsd: { type: number }
+        spentUsd: { type: number }
+        pct: { type: number }
+        blocked: { type: boolean }
+        periodStart: { type: string, format: date-time }
+        periodEnd: { type: string, format: date-time }
+
+    ExportJob:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, RUNNING, DONE, FAILED] }
+        rowCount: { type: [integer, "null"] }
+        downloadUrl: { type: [string, "null"], format: uri }
+        expiresAt: { type: [string, "null"], format: date-time }
+
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        actorUserId: { type: [string, "null"], format: uuid }
+        actorType: { type: string, enum: [USER, SYSTEM, API_TOKEN] }
+        action: { type: string, example: budget.update }
+        resourceType: { type: string }
+        resourceId: { type: [string, "null"] }
+        diff: { type: [object, "null"], additionalProperties: true }
+        ip: { type: [string, "null"] }

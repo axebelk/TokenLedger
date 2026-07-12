@@ -1,0 +1,35 @@
+{
+  "name": "@tokentrail/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tokentrail/auth": "workspace:*",
+    "@tokentrail/config": "workspace:*",
+    "@tokentrail/db": "workspace:*",
+    "@tokentrail/pricing": "workspace:*",
+    "@tokentrail/providers": "workspace:*",
+    "@tokentrail/queue": "workspace:*",
+    "@tokentrail/shared": "workspace:*",
+    "@tokentrail/telemetry": "workspace:*",
+    "fastify": "^5.2.0",
+    "pg": "^8.13.0",
+    "prom-client": "^15.1.0",
+    "tsx": "^4.19.0",
+    "undici": "^7.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

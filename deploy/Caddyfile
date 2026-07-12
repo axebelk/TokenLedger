@@ -1,0 +1,16 @@
+{$DOMAIN::8080} {
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+	handle /gw/* {
+		reverse_proxy gateway:4100 {
+			flush_interval -1
+			transport http {
+				read_timeout 10m
+			}
+		}
+	}
+	handle {
+		reverse_proxy web:80
+	}
+}

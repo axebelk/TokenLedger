@@ -1,0 +1,108 @@
+name: tokentrail
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://tokentrail:${POSTGRES_PASSWORD}@postgres:5432/tokentrail
+  REDIS_URL: redis://redis:6379
+  TOKENTRAIL_MASTER_KEY: ${TOKENTRAIL_MASTER_KEY}
+  JWT_SECRET: ${JWT_SECRET}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  NODE_ENV: production
+  LICENSE_KEY: ${LICENSE_KEY:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tokentrail
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: tokentrail
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tokentrail"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb",
+              "--maxmemory-policy", "noeviction"]   # streams must not be evicted
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    image: tokentrail/api:${TOKENTRAIL_VERSION:-latest}
+    command: ["sh", "-c",
+      "./node_modules/.bin/prisma migrate deploy --schema node_modules/@tokentrail/db/prisma/schema.prisma && ./node_modules/.bin/tsx node_modules/@tokentrail/db/src/seed/index.ts"]
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    image: tokentrail/api:${TOKENTRAIL_VERSION:-latest}
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      <<: *app-env
+      API_PORT: "4000"
+      SMTP_URL: ${SMTP_URL:-}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  gateway:
+    image: tokentrail/gateway:${TOKENTRAIL_VERSION:-latest}
+    build: { context: ., dockerfile: apps/gateway/Dockerfile }
+    environment:
+      <<: *app-env
+      GATEWAY_PORT: "4100"
+      GATEWAY_FAILURE_POLICY: ${GATEWAY_FAILURE_POLICY:-FAIL_OPEN}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    deploy:
+      replicas: ${GATEWAY_REPLICAS:-1}
+    restart: unless-stopped
+
+  worker:
+    image: tokentrail/worker:${TOKENTRAIL_VERSION:-latest}
+    build: { context: ., dockerfile: apps/worker/Dockerfile }
+    environment:
+      <<: *app-env
+      SMTP_URL: ${SMTP_URL:-}
+    volumes: [exports:/data/exports]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  web:
+    image: tokentrail/web:${TOKENTRAIL_VERSION:-latest}
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports: ["8080:8080", "8443:8443"]
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [api, gateway, web]
+    restart: unless-stopped
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  exports: {}
+  caddydata: {}
