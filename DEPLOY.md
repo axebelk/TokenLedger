@@ -29,6 +29,14 @@ depends on whether `:80`/`:443` on this host are already spoken for.
 Everything below is shared except step 6 (launch) and step 7 (proxy config),
 which fork per path.
 
+There's a second, independent choice: **pull pre-built images from GHCR**
+(`deploy/docker-compose.prod.yml`, steps 1–11 below as written) **or build on
+the server from this checkout** (the root `docker-compose.yml` — same Path
+A/B split via the same `--profile caddy` / `docker-compose.host-proxy.yml`
+mechanics, but substitute `docker compose build` for the `pull` step and skip
+steps 1 and 4 entirely, since there's no registry involved). Building from
+source is the simpler option if you don't want to depend on CI/GHCR at all.
+
 ---
 
 ## 1. How images get built and published
