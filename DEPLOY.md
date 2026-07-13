@@ -229,6 +229,13 @@ set your `server_name` and cert paths, `nginx -t && systemctl reload nginx`.
 > The `/gw/*` route also needs `proxy_buffering off` — LLM responses are
 > streamed token-by-token (SSE/NDJSON), and a buffering proxy delivers them in
 > one lump at the end instead, which breaks streaming clients.
+>
+> **Large requests (images/PDFs in prompts, long context):** nginx defaults to
+> rejecting request bodies over 1 MB (`client_max_body_size`). Multimodal LLM
+> requests routinely exceed that once an image or document is base64-encoded
+> inline. The example file sets `client_max_body_size 25m;`, matching the
+> gateway's own 20 MiB request cap with a little headroom. Path A (bundled
+> Caddy) needs no change here — Caddy has no default body-size limit.
 
 ---
 
@@ -295,6 +302,7 @@ Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgre
 | No **Platform** menu for admin | The signed-in email isn't in `SUPERADMIN_EMAILS`; update `.env` and `up -d --force-recreate api` to restart with it picked up. |
 | Provider credentials all invalid after a redeploy | `TOKENTRAIL_MASTER_KEY` changed — restore the original key. |
 | LLM responses arrive all at once instead of streaming | Your reverse proxy is buffering `/gw/*` — add `proxy_buffering off` (nginx) or the equivalent for your proxy. |
+| `413 Request Entity Too Large` on requests with images/PDFs/large context | Your proxy's body-size cap is below the gateway's 20 MiB limit — add `client_max_body_size 25m;` (nginx, see step 7). Not applicable on Path A (Caddy has no default limit). If it persists after that, confirm you're on an image tagged after the `bodyLimit` fix — older gateway builds silently capped at Fastify's 1 MiB default regardless of proxy config. |
 
 ---
 
