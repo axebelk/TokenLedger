@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert, Button, Card, Drawer, Form, Input, Popconfirm, Select, Space, Table, Tag, message,
 } from "antd";
-import { PlusOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { EditOutlined, PlusOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import {
   ACTIVE_PROVIDERS, ALL_PROVIDERS, wsApi, type Credential, type Provider,
@@ -15,6 +15,7 @@ export function ProvidersPage() {
   const queryClient = useQueryClient();
   const credentials = useQuery({ queryKey: [ws, "credentials"], queryFn: () => wsApi.credentials(ws) });
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Credential | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [ws, "credentials"] });
 
   const test = useMutation({
@@ -87,6 +88,9 @@ export function ProvidersPage() {
                 >
                   Test
                 </Button>
+                <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(credential)}>
+                  Edit
+                </Button>
                 <Button
                   size="small"
                   loading={toggle.isPending && toggle.variables?.id === credential.id}
@@ -110,6 +114,15 @@ export function ProvidersPage() {
         void queryClient.invalidateQueries({ queryKey: [ws, "credentials"] });
         setOpen(false);
       }} />
+      <EditCredentialDrawer
+        ws={ws}
+        credential={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          void invalidate();
+          setEditing(null);
+        }}
+      />
     </Card>
   );
 }
@@ -170,6 +183,74 @@ function AddCredentialDrawer({
         )}
         <Button type="primary" htmlType="submit" loading={create.isPending} block>
           Save
+        </Button>
+      </Form>
+    </Drawer>
+  );
+}
+
+function EditCredentialDrawer({
+  ws, credential, onClose, onSaved,
+}: { ws: string; credential: Credential | null; onClose: () => void; onSaved: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [form] = Form.useForm();
+
+  // Re-seed the form whenever a different credential is opened for editing.
+  useEffect(() => {
+    if (credential) {
+      form.setFieldsValue({ name: credential.name, baseUrl: credential.baseUrl ?? undefined, secret: undefined });
+      setError(null);
+    }
+  }, [credential, form]);
+
+  const update = useMutation({
+    mutationFn: (values: { name: string; secret?: string; baseUrl?: string }) =>
+      wsApi.updateCredential(ws, credential!.id, {
+        name: values.name,
+        ...(values.baseUrl ? { baseUrl: values.baseUrl } : credential!.provider === "OLLAMA" ? {} : { baseUrl: null }),
+        ...(values.secret ? { secret: values.secret } : {}),
+      }),
+    onSuccess: () => {
+      form.resetFields();
+      setError(null);
+      onSaved();
+    },
+    onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to save"),
+  });
+
+  if (!credential) return null;
+
+  return (
+    <Drawer title={`Edit ${credential.provider} credential`} open={credential !== null} onClose={onClose} width={420}>
+      {error && <Alert type="error" message={error} style={{ marginBottom: 16 }} />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values: { name: string; secret?: string; baseUrl?: string }) => update.mutate(values)}
+      >
+        <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        {credential.provider === "OLLAMA" ? (
+          <Form.Item name="baseUrl" label="Base URL" rules={[{ required: true, type: "url" }]}>
+            <Input placeholder="http://localhost:11434" />
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item
+              name="secret"
+              label="API key"
+              extra={`Leave blank to keep the current key (••••${credential.secretLast4 ?? "????"})`}
+            >
+              <Input.Password placeholder="Enter a new key to rotate it" />
+            </Form.Item>
+            <Form.Item name="baseUrl" label="Base URL override (optional)" rules={[{ type: "url" }]}>
+              <Input />
+            </Form.Item>
+          </>
+        )}
+        <Button type="primary" htmlType="submit" loading={update.isPending} block>
+          Save changes
         </Button>
       </Form>
     </Drawer>
