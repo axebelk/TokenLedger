@@ -22,6 +22,15 @@
 # same bug). The fix used below: `proxy_pass` has NO trailing slash and NO
 # path — that makes nginx forward the ORIGINAL request URI byte-for-byte,
 # with zero rewriting. Do not "clean up" this file by adding one back.
+#
+# ── LARGE REQUESTS (multimodal prompts, big context) ─────────────────────
+# nginx's default `client_max_body_size` is 1m — too small for LLM requests
+# that embed base64 images/PDFs or long context. The gateway itself accepts
+# up to 20 MiB per request (apps/gateway/src/proxy/core.ts MAX_REQUEST_BODY);
+# client_max_body_size below is set with a little headroom above that so the
+# gateway's own limit (which returns a proper error) is what applies, not
+# nginx's generic 413. The API and console don't need large bodies — only
+# /gw/ (and the server-wide fallback, in case a proxied provider needs it).
 
 server {
     listen 80;
@@ -35,6 +44,8 @@ server {
 
     ssl_certificate     /etc/letsencrypt/live/tokentrail.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/tokentrail.example.com/privkey.pem;
+
+    client_max_body_size 25m;
 
     # Console (SPA) — everything not matched below.
     location / {

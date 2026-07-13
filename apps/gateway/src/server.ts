@@ -6,6 +6,7 @@ import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
 import { createRedis, pingRedis } from "@tokentrail/queue";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
+import { MAX_REQUEST_BODY } from "./proxy/core.js";
 import { makeGatewayHandler } from "./proxy/pipeline.js";
 import { makeUnifiedHandler } from "./proxy/unified.js";
 import { PgPricingSource, StaticPricingSource } from "./pricing.js";
@@ -67,6 +68,9 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
     loggerInstance: logger,
     genReqId: () => `req_${randomUUID()}`,
     disableRequestLogging: true, // hot path — request logs are metrics' job
+    // Fastify defaults to 1 MiB, which silently truncates multimodal LLM
+    // requests (base64 images/PDFs, long context) below MAX_REQUEST_BODY.
+    bodyLimit: MAX_REQUEST_BODY,
   });
 
   // A proxy must never parse request bodies — they pipe upstream untouched.
