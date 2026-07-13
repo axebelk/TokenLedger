@@ -7,10 +7,8 @@ name: tokentrail
 #   docker compose up -d --build
 #
 # That's it. api/gateway/web are published on 127.0.0.1:4000/4100/3000 for
-# a reverse proxy already running on this host (nginx/Caddy/Traefik) to
-# reach — see deploy/nginx-site.conf.example. Already got HTTPS from your
-# proxy: nothing else to do. Have no proxy at all yet? Add `--profile caddy`
-# to also start a bundled Caddy that gets you automatic HTTPS on :80/:443.
+# the reverse proxy already running on this host — see
+# deploy/nginx-site.conf.example.
 #
 # Redeploy after a `git pull`: images are cached by tag, so a plain `up`
 # will NOT pick up new source changes on its own — always pass `--build`
@@ -118,29 +116,7 @@ services:
     ports: ["127.0.0.1:3000:80"] # web image serves on 80 internally (nginx)
     restart: unless-stopped
 
-  # Opt-in via `--profile caddy` — only needed if you have NO reverse proxy
-  # on this host yet and want this bundle to also handle HTTPS directly.
-  # Already have nginx/Caddy/Traefik here? Skip this profile — api/gateway/
-  # web above are already published on 127.0.0.1 for it to reach.
-  caddy:
-    image: caddy:2-alpine
-    profiles: ["caddy"]
-    # With DOMAIN set, Caddy binds the domain on 443 (and 80→443 redirect)
-    # and provisions a Let's Encrypt certificate automatically.
-    ports: ["80:80", "443:443"]
-    environment:
-      # Left optional (not required) deliberately: this var is still
-      # interpolated even when --profile caddy isn't active (Path B), so
-      # making it required here would break Path B deploys.
-      DOMAIN: ${DOMAIN:-}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddydata:/data
-    depends_on: [api, gateway, web]
-    restart: unless-stopped
-
 volumes:
   pgdata: {}
   redisdata: {}
   exports: {}
-  caddydata: {}
