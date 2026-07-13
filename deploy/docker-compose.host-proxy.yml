@@ -1,0 +1,25 @@
+# Override for Path B: this host already runs a reverse proxy (nginx, an
+# existing Caddy, Traefik, …) fronting other sites, so :80/:443 are taken and
+# the bundled `caddy` service (see docker-compose.prod.yml) can't bind them.
+#
+# This file does NOT start `caddy` — just omit the `--profile caddy` flag and
+# it's skipped automatically. It publishes api/gateway/web on 127.0.0.1 only
+# (never on a public interface) so your existing proxy can reach them:
+#
+#   docker compose -f deploy/docker-compose.prod.yml \
+#     -f deploy/docker-compose.host-proxy.yml --env-file .env up -d
+#
+# Then point your host proxy at 127.0.0.1:4000 (api), 127.0.0.1:4100
+# (gateway), 127.0.0.1:3000 (web). See deploy/nginx-site.conf.example for a
+# ready-to-adapt vhost — read it even if you use a different proxy, the
+# "/api prefix must not be stripped" gotcha it calls out applies universally.
+
+services:
+  api:
+    ports: ["127.0.0.1:4000:4000"]
+
+  gateway:
+    ports: ["127.0.0.1:4100:4100"]
+
+  web:
+    ports: ["127.0.0.1:3000:80"] # web image serves on 80 internally (nginx)

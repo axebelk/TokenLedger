@@ -3,9 +3,19 @@ name: tokentrail
 # Production stack that PULLS pre-built images from GHCR (published by
 # .github/workflows/docker-publish.yml) — no local build step.
 #
-#   export IMAGE_PREFIX=ghcr.io/<owner>/tokentrail   # lowercase owner
-#   export TAG=latest                                 # or a pinned vX.Y.Z
-#   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d
+# Two ways to run this, see DEPLOY.md for the full walkthrough:
+#
+#   Path A — no reverse proxy on this host yet: let the bundled Caddy
+#   container own :80/:443 and get you HTTPS automatically.
+#     docker compose -f deploy/docker-compose.prod.yml --profile caddy \
+#       --env-file .env up -d
+#
+#   Path B — you already run nginx/Caddy/Traefik on this host for other
+#   sites (so :80/:443 are taken): skip the "caddy" profile and layer the
+#   host-proxy override, which publishes api/gateway/web on 127.0.0.1 only
+#   for your existing proxy to reach.
+#     docker compose -f deploy/docker-compose.prod.yml \
+#       -f deploy/docker-compose.host-proxy.yml --env-file .env up -d
 #
 # All secrets come from the --env-file (.env). See DEPLOY.md.
 
@@ -98,8 +108,12 @@ services:
     image: ${IMAGE_PREFIX}-web:${TAG:-latest}
     restart: unless-stopped
 
+  # Opt-in via `--profile caddy` (Path A). Skip this profile entirely if a
+  # reverse proxy already owns :80/:443 on this host (Path B) — see
+  # docker-compose.host-proxy.yml.
   caddy:
     image: caddy:2-alpine
+    profiles: ["caddy"]
     # With DOMAIN set, Caddy binds the domain on 443 (and 80→443 redirect) and
     # provisions a Let's Encrypt cert automatically.
     ports: ["80:80", "443:443"]

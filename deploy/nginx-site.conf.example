@@ -1,0 +1,71 @@
+# Example nginx vhost for TokenTrail running behind an EXISTING host nginx
+# (Path B in DEPLOY.md — used when this host already fronts other sites, so
+# the bundled Caddy container can't claim :80/:443).
+#
+# Assumes docker-compose.host-proxy.yml is layered in, publishing:
+#   web     → 127.0.0.1:3000
+#   api     → 127.0.0.1:4000
+#   gateway → 127.0.0.1:4100
+#
+# Copy to /etc/nginx/conf.d/tokentrail.conf (or sites-available/ + symlink),
+# adjust server_name and cert paths, then:
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# ── THE ONE GOTCHA THAT WILL BITE YOU ────────────────────────────────────
+# nginx's `proxy_pass` silently REWRITES the request path when its target has
+# a trailing slash (or any URI component) *and* the `location` prefix doesn't
+# exactly match. TokenTrail's API only answers under /api/v1/... — if nginx
+# strips or mangles the "/api" prefix before forwarding, every request 404s
+# with something like:
+#   {"message":"Route POST://v1/auth/register not found", ...}
+# (note the missing/garbled "/api" and possible double slash — both are the
+# same bug). The fix used below: `proxy_pass` has NO trailing slash and NO
+# path — that makes nginx forward the ORIGINAL request URI byte-for-byte,
+# with zero rewriting. Do not "clean up" this file by adding one back.
+
+server {
+    listen 80;
+    server_name tokentrail.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name tokentrail.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/tokentrail.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tokentrail.example.com/privkey.pem;
+
+    # Console (SPA) — everything not matched below.
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Control-plane API. No trailing slash on proxy_pass — see gotcha above.
+    location /api/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # LLM gateway — streamed responses (SSE/NDJSON), buffering must stay off
+    # and the read timeout must be generous for long completions.
+    location /gw/ {
+        proxy_pass http://127.0.0.1:4100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+    }
+}
