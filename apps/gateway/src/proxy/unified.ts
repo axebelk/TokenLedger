@@ -114,7 +114,7 @@ export function makeUnifiedHandler(deps: GatewayDeps, logger: Logger) {
     // ── Credential ───────────────────────────────────────────────────────────
     let credential;
     try {
-      credential = await deps.credentialStore.getDefault(ctx.workspaceId, provider);
+      credential = await deps.credentialStore.getDefault(ctx.workspaceId, provider, ctx.credentialAllowlist);
     } catch (err) {
       logger.error({ err, provider }, "credential resolution failed");
       credential = null;

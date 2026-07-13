@@ -165,7 +165,7 @@ model Session {
   userId    String    @db.Uuid
   familyId  String    @db.Uuid
   tokenHash String    @unique
-  expiresAt DateTime @db.Timestamptz(3)
+  expiresAt DateTime  @db.Timestamptz(3)
   revokedAt DateTime? @db.Timestamptz(3)
   ip        String?
   userAgent String?
@@ -298,8 +298,8 @@ model Invitation {
   teamId      String?       @db.Uuid
   tokenHash   String        @unique
   invitedById String        @db.Uuid
-  expiresAt   DateTime @db.Timestamptz(3)
-  acceptedAt  DateTime? @db.Timestamptz(3)
+  expiresAt   DateTime      @db.Timestamptz(3)
+  acceptedAt  DateTime?     @db.Timestamptz(3)
   createdAt   DateTime      @default(now()) @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
@@ -359,7 +359,7 @@ model PoolMember {
   rpmLimit        Int?
   tpmLimit        Int?
   health          PoolHealth @default(HEALTHY)
-  healthChangedAt DateTime? @db.Timestamptz(3)
+  healthChangedAt DateTime?  @db.Timestamptz(3)
 
   pool       ProviderPool       @relation(fields: [poolId], references: [id], onDelete: Cascade)
   credential ProviderCredential @relation(fields: [credentialId], references: [id])
@@ -369,20 +369,26 @@ model PoolMember {
 }
 
 model VirtualKey {
-  id                String     @id @default(uuid(7)) @db.Uuid
-  workspaceId       String     @db.Uuid
-  projectId         String     @db.Uuid
-  userId            String     @db.Uuid
-  name              String
-  keyHash           String     @unique // sha256 of tt_live_…
-  keyLast4          String
-  providerAllowlist Provider[] @default([]) // empty ⇒ all workspace providers
-  modelAllowlist    String[]   @default([])
-  rpmLimit          Int?
-  expiresAt         DateTime? @db.Timestamptz(3)
-  status            KeyStatus  @default(ACTIVE)
-  lastUsedAt        DateTime? @db.Timestamptz(3)
-  createdAt         DateTime   @default(now()) @db.Timestamptz(3)
+  id                  String     @id @default(uuid(7)) @db.Uuid
+  workspaceId         String     @db.Uuid
+  projectId           String     @db.Uuid
+  userId              String     @db.Uuid
+  name                String
+  keyHash             String     @unique // sha256 of tt_live_…
+  keyLast4            String
+  providerAllowlist   Provider[] @default([]) // empty ⇒ all workspace providers
+  // Pins this key to specific ProviderCredential rows (not just a provider
+  // type) — needed when a workspace has multiple credentials for the same
+  // provider (e.g. several Anthropic accounts) and a key must use one
+  // particular one rather than whichever is flagged isDefault. Empty ⇒ falls
+  // back to the workspace's default credential per provider (old behavior).
+  credentialAllowlist String[]   @default([]) @db.Uuid
+  modelAllowlist      String[]   @default([])
+  rpmLimit            Int?
+  expiresAt           DateTime?  @db.Timestamptz(3)
+  status              KeyStatus  @default(ACTIVE)
+  lastUsedAt          DateTime?  @db.Timestamptz(3)
+  createdAt           DateTime   @default(now()) @db.Timestamptz(3)
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   project     Project      @relation(fields: [projectId], references: [id])
@@ -420,8 +426,8 @@ model ModelPrice {
   outputPerMtok     Decimal     @db.Decimal(12, 6)
   cacheReadPerMtok  Decimal     @default(0) @db.Decimal(12, 6)
   cacheWritePerMtok Decimal     @default(0) @db.Decimal(12, 6)
-  effectiveFrom     DateTime @db.Timestamptz(3)
-  effectiveTo       DateTime? @db.Timestamptz(3) // null ⇒ current
+  effectiveFrom     DateTime    @db.Timestamptz(3)
+  effectiveTo       DateTime?   @db.Timestamptz(3) // null ⇒ current
   source            PriceSource @default(SEED)
 
   @@unique([provider, modelPattern, effectiveFrom])
@@ -451,7 +457,7 @@ model ModelPriceOverride {
 
 model UsageEvent {
   id               String      @db.Uuid // uuid v7 minted at gateway
-  occurredAt       DateTime @db.Timestamptz(3) // partition key
+  occurredAt       DateTime    @db.Timestamptz(3) // partition key
   workspaceId      String      @db.Uuid
   projectId        String      @db.Uuid
   teamId           String?     @db.Uuid // denormalized at event time
@@ -613,7 +619,7 @@ model ScheduledReport {
   reportParams Json
   format       ReportFormat @default(CSV)
   recipients   Json // {emails:[], slackChannel?}
-  lastRunAt    DateTime? @db.Timestamptz(3)
+  lastRunAt    DateTime?    @db.Timestamptz(3)
   status       String       @default("ACTIVE")
   createdAt    DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime     @updatedAt @db.Timestamptz(3)

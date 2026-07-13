@@ -25,6 +25,7 @@ const ctxBase: Omit<ResolvedKeyContext, "vkId"> = {
   userId: "0198c0de-0000-7000-8000-00000000u001",
   status: "ACTIVE",
   providerAllowlist: [],
+  credentialAllowlist: [],
   modelAllowlist: [],
 };
 

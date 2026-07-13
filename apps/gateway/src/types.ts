@@ -12,6 +12,8 @@ export interface ResolvedKeyContext {
   status: "ACTIVE" | "REVOKED" | "EXPIRED";
   expiresAt?: Date;
   providerAllowlist: Provider[];
+  /** Pins this key to specific ProviderCredential ids; empty ⇒ workspace default. */
+  credentialAllowlist: string[];
   modelAllowlist: string[];
   rpmLimit?: number;
 }
@@ -28,8 +30,17 @@ export interface ResolvedCredentialSecret {
 }
 
 export interface CredentialStore {
-  /** Workspace's default (or only active) credential for a provider. */
-  getDefault(workspaceId: string, provider: Provider): Promise<ResolvedCredentialSecret | null>;
+  /**
+   * Workspace's default (or only active) credential for a provider. When
+   * `allowedIds` is non-empty (a key's credentialAllowlist), resolution is
+   * restricted to that set — still preferring the isDefault-flagged one
+   * among them, falling back to the oldest active match otherwise.
+   */
+  getDefault(
+    workspaceId: string,
+    provider: Provider,
+    allowedIds?: string[],
+  ): Promise<ResolvedCredentialSecret | null>;
 }
 
 export interface EventSink {

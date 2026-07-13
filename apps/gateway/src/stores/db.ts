@@ -27,6 +27,7 @@ interface VkRow {
   status: "ACTIVE" | "REVOKED" | "EXPIRED";
   expiresAt: Date | null;
   providerAllowlist: Provider[];
+  credentialAllowlist: string[];
   modelAllowlist: string[];
   rpmLimit: number | null;
 }
@@ -37,7 +38,8 @@ export class PgKeyStore implements KeyStore {
   async resolve(keyHash: string): Promise<ResolvedKeyContext | null> {
     const { rows } = await this.pool.query<VkRow>(
       `SELECT vk.id, vk."workspaceId", vk."projectId", p."teamId", vk."userId",
-              vk.status, vk."expiresAt", vk."providerAllowlist", vk."modelAllowlist", vk."rpmLimit"
+              vk.status, vk."expiresAt", vk."providerAllowlist", vk."credentialAllowlist",
+              vk."modelAllowlist", vk."rpmLimit"
          FROM virtual_key vk
          JOIN project p ON p.id = vk."projectId"
         WHERE vk."keyHash" = $1`,
@@ -56,6 +58,7 @@ export class PgKeyStore implements KeyStore {
       // node-pg does not parse custom enum-array types (Provider[]); it hands
       // back the raw array literal ("{ANTHROPIC,OPENAI}"), so parse defensively.
       providerAllowlist: parsePgArray(row.providerAllowlist) as Provider[],
+      credentialAllowlist: parsePgArray(row.credentialAllowlist),
       modelAllowlist: parsePgArray(row.modelAllowlist),
       ...(row.rpmLimit != null ? { rpmLimit: row.rpmLimit } : {}),
     };
@@ -86,14 +89,18 @@ export class PgCredentialStore implements CredentialStore {
   async getDefault(
     workspaceId: string,
     provider: Provider,
+    allowedIds?: string[],
   ): Promise<ResolvedCredentialSecret | null> {
+    // allowedIds present ⇒ restrict to that specific set of credential rows
+    // (a key's credentialAllowlist); NULL ⇒ no restriction (old behavior).
     const { rows } = await this.pool.query<CredRow>(
       `SELECT id, "encryptedSecret", "baseUrl"
          FROM provider_credential
         WHERE "workspaceId" = $1 AND provider = $2::"Provider" AND status = 'ACTIVE'
+          AND ($3::uuid[] IS NULL OR id = ANY($3::uuid[]))
         ORDER BY "isDefault" DESC, "createdAt" ASC
         LIMIT 1`,
-      [workspaceId, provider],
+      [workspaceId, provider, allowedIds && allowedIds.length > 0 ? allowedIds : null],
     );
     const row = rows[0];
     if (!row) return null;

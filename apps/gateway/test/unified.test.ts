@@ -75,7 +75,7 @@ const WS = "0198c0de-0000-7000-8000-0000000000w1";
 const ctxBase: Omit<ResolvedKeyContext, "vkId"> = {
   workspaceId: WS, projectId: "0198c0de-0000-7000-8000-0000000000p1",
   userId: "0198c0de-0000-7000-8000-0000000000u1", status: "ACTIVE",
-  providerAllowlist: [], modelAllowlist: [],
+  providerAllowlist: [], credentialAllowlist: [], modelAllowlist: [],
 };
 
 let mock: Awaited<ReturnType<typeof startShapeMock>>;

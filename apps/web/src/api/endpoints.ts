@@ -39,7 +39,8 @@ export interface Credential {
 
 export interface VirtualKey {
   id: string; name: string; keyLast4: string; projectId: string; userId: string;
-  providerAllowlist: Provider[]; modelAllowlist: string[]; rpmLimit: number | null;
+  providerAllowlist: Provider[]; credentialAllowlist: string[]; modelAllowlist: string[];
+  rpmLimit: number | null;
   expiresAt: string | null; status: "ACTIVE" | "REVOKED" | "EXPIRED";
   lastUsedAt: string | null; createdAt: string;
 }
@@ -167,8 +168,21 @@ export const wsApi = {
   deleteCredential: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/credentials/${id}`, { method: "DELETE" }),
   keys: (ws: string) => api<{ data: VirtualKey[] }>(`/workspaces/${ws}/keys`),
-  issueKey: (ws: string, body: { projectId: string; name: string; userId?: string; providerAllowlist?: Provider[]; expiresAt?: string }) =>
-    api<VirtualKey & { key: string }>(`/workspaces/${ws}/keys`, { method: "POST", body }),
+  issueKey: (
+    ws: string,
+    body: {
+      projectId: string; name: string; userId?: string;
+      providerAllowlist?: Provider[]; credentialAllowlist?: string[]; expiresAt?: string;
+    },
+  ) => api<VirtualKey & { key: string }>(`/workspaces/${ws}/keys`, { method: "POST", body }),
+  updateKey: (
+    ws: string,
+    id: string,
+    body: {
+      name?: string; credentialAllowlist?: string[];
+      rpmLimit?: number | null; expiresAt?: string | null;
+    },
+  ) => api<VirtualKey>(`/workspaces/${ws}/keys/${id}`, { method: "PATCH", body }),
   revokeKey: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/keys/${id}/revoke`, { method: "POST" }),
   summary: (ws: string, days = 30) => api<Summary>(`/workspaces/${ws}/analytics/summary?days=${days}`),
