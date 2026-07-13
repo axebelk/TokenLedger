@@ -130,6 +130,11 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
   const patchSchema = z.object({
     status: z.enum(["ACTIVE", "DISABLED"]).optional(),
     isDefault: z.literal(true).optional(),
+    name: z.string().min(1).max(100).optional(),
+    // Present + non-empty ⇒ rotate the secret; omit to leave the stored secret untouched.
+    secret: z.string().min(1).max(500).optional(),
+    // Explicit null clears an existing baseUrl override; omit to leave it untouched.
+    baseUrl: z.string().url().nullable().optional(),
   });
 
   app.patch("/workspaces/:ws/credentials/:id", { preHandler: admin }, async (request) => {
@@ -138,6 +143,15 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
     const body = patchSchema.parse(request.body);
     const stored = await prisma.providerCredential.findFirst({ where: { id, workspaceId } });
     if (!stored) throw new NotFoundError("Credential", id);
+
+    if (body.secret && !ring) {
+      throw new ValidationError(
+        "TOKENTRAIL_MASTER_KEY is not configured — cannot store encrypted credentials",
+      );
+    }
+    if (stored.provider === "OLLAMA" && body.baseUrl === null) {
+      throw new ValidationError("Ollama credentials require a baseUrl");
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       if (body.isDefault) {
@@ -151,6 +165,14 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
         data: {
           ...(body.status ? { status: body.status } : {}),
           ...(body.isDefault ? { isDefault: true } : {}),
+          ...(body.name !== undefined ? { name: body.name } : {}),
+          ...(body.baseUrl !== undefined ? { baseUrl: body.baseUrl } : {}),
+          ...(body.secret
+            ? {
+                encryptedSecret: new Uint8Array(encryptSecret(body.secret, ring!)),
+                secretLast4: body.secret.slice(-4),
+              }
+            : {}),
         },
         select: {
           id: true, provider: true, name: true, secretLast4: true, baseUrl: true,
