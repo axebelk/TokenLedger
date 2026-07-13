@@ -4,17 +4,22 @@ name: tokentrail
 # instead of deploy/docker-compose.prod.yml when you'd rather build on the
 # server than pull from GHCR (no registry/CI dependency).
 #
-# Redeploy after a `git pull`: images are cached by tag, so a plain `up`
-# will NOT pick up new source changes on its own — always rebuild first:
-#   docker compose build
-#   docker compose --profile caddy up -d        # Path A: no proxy on this host yet
-#   docker compose -f docker-compose.yml -f deploy/docker-compose.host-proxy.yml up -d
-#                                                 # Path B: you already run nginx/Caddy/Traefik here
-# See DEPLOY.md for the full walkthrough (Path A vs Path B, secrets, backups).
+#   docker compose up -d --build
 #
-# All secrets come from --env-file .env (see .env.example). Required values
-# use ${VAR:?...} below so `up` fails fast with a clear message instead of
-# deploying with an empty secret.
+# That's it. api/gateway/web are published on 127.0.0.1:4000/4100/3000 for
+# a reverse proxy already running on this host (nginx/Caddy/Traefik) to
+# reach — see deploy/nginx-site.conf.example. Already got HTTPS from your
+# proxy: nothing else to do. Have no proxy at all yet? Add `--profile caddy`
+# to also start a bundled Caddy that gets you automatic HTTPS on :80/:443.
+#
+# Redeploy after a `git pull`: images are cached by tag, so a plain `up`
+# will NOT pick up new source changes on its own — always pass `--build`
+# (as above) or run `docker compose build` first.
+#
+# All secrets come from .env in this directory (see .env.example, loaded
+# automatically — no --env-file flag needed). Required values use
+# ${VAR:?...} so `up` fails fast with a clear message instead of deploying
+# with an empty secret.
 
 x-app-env: &app-env
   DATABASE_URL: postgresql://tokentrail:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/tokentrail
@@ -58,7 +63,6 @@ services:
 
   migrate:
     build: { context: ., dockerfile: apps/api/Dockerfile }
-    image: tokentrail/api:${TOKENTRAIL_VERSION:-latest}
     command: ["sh", "-c",
       "./node_modules/.bin/prisma migrate deploy --schema node_modules/@tokentrail/db/prisma/schema.prisma && ./node_modules/.bin/tsx node_modules/@tokentrail/db/src/seed/index.ts"]
     environment: *app-env
@@ -67,8 +71,8 @@ services:
     restart: "no"
 
   api:
-    image: tokentrail/api:${TOKENTRAIL_VERSION:-latest}
     build: { context: ., dockerfile: apps/api/Dockerfile }
+    ports: ["127.0.0.1:4000:4000"]
     environment:
       <<: *app-env
       API_PORT: "4000"
@@ -80,8 +84,8 @@ services:
     restart: unless-stopped
 
   gateway:
-    image: tokentrail/gateway:${TOKENTRAIL_VERSION:-latest}
     build: { context: ., dockerfile: apps/gateway/Dockerfile }
+    ports: ["127.0.0.1:4100:4100"]
     environment:
       <<: *app-env
       GATEWAY_PORT: "4100"
@@ -90,15 +94,15 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
     # NOTE: `deploy.replicas` only takes effect under `docker stack deploy`
-    # (Swarm) — plain `docker compose up` ignores it silently. To actually
-    # run more than one gateway container, scale explicitly instead:
-    #   docker compose up -d --scale gateway=3
+    # (Swarm) — plain `docker compose up` ignores it silently. `--scale
+    # gateway=3` won't work either as-is: the fixed 127.0.0.1:4100 port
+    # above can only bind once. To run multiple gateway containers, drop
+    # that port mapping and put a load balancer in front of the replicas.
     deploy:
       replicas: ${GATEWAY_REPLICAS:-1}
     restart: unless-stopped
 
   worker:
-    image: tokentrail/worker:${TOKENTRAIL_VERSION:-latest}
     build: { context: ., dockerfile: apps/worker/Dockerfile }
     environment:
       <<: *app-env
@@ -110,13 +114,14 @@ services:
     restart: unless-stopped
 
   web:
-    image: tokentrail/web:${TOKENTRAIL_VERSION:-latest}
     build: { context: ., dockerfile: apps/web/Dockerfile }
+    ports: ["127.0.0.1:3000:80"] # web image serves on 80 internally (nginx)
     restart: unless-stopped
 
-  # Opt-in via `--profile caddy` (Path A: no reverse proxy on this host yet).
-  # Skip this profile if you already run nginx/Caddy/Traefik here (Path B) —
-  # layer deploy/docker-compose.host-proxy.yml instead, see header comment.
+  # Opt-in via `--profile caddy` — only needed if you have NO reverse proxy
+  # on this host yet and want this bundle to also handle HTTPS directly.
+  # Already have nginx/Caddy/Traefik here? Skip this profile — api/gateway/
+  # web above are already published on 127.0.0.1 for it to reach.
   caddy:
     image: caddy:2-alpine
     profiles: ["caddy"]

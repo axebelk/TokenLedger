@@ -31,11 +31,16 @@ which fork per path.
 
 There's a second, independent choice: **pull pre-built images from GHCR**
 (`deploy/docker-compose.prod.yml`, steps 1–11 below as written) **or build on
-the server from this checkout** (the root `docker-compose.yml` — same Path
-A/B split via the same `--profile caddy` / `docker-compose.host-proxy.yml`
-mechanics, but substitute `docker compose build` for the `pull` step and skip
-steps 1 and 4 entirely, since there's no registry involved). Building from
-source is the simpler option if you don't want to depend on CI/GHCR at all.
+the server from this checkout** (the root `docker-compose.yml` — no registry,
+no CI dependency; skip steps 1 and 4 entirely). Building from source is even
+simpler than the GHCR path — `api`/`gateway`/`web` are already published on
+`127.0.0.1` for whatever reverse proxy you already run, so it's just:
+
+```bash
+docker compose up -d --build
+```
+Add `--profile caddy` only if you have **no** reverse proxy on this host yet
+and want the bundled Caddy to also handle HTTPS.
 
 ---
 
