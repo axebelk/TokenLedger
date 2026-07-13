@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Card, Checkbox, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography,
+  Alert, Button, Card, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography,
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
-import { ALL_PROVIDERS, membersApi, wsApi, type Provider, type VirtualKey } from "../../api/endpoints.js";
+import { membersApi, wsApi, type VirtualKey } from "../../api/endpoints.js";
+import { ApiError } from "../../api/client.js";
 import { CopyField } from "../../components/CopyField.js";
 
 export function KeysPage() {
@@ -19,6 +20,7 @@ export function KeysPage() {
     [members.data],
   );
   const [issueOpen, setIssueOpen] = useState(false);
+  const [editing, setEditing] = useState<VirtualKey | null>(null);
 
   const revoke = useMutation({
     mutationFn: (id: string) => wsApi.revokeKey(ws, id),
@@ -68,18 +70,32 @@ export function KeysPage() {
             title: "",
             render: (_, key) =>
               key.status === "ACTIVE" && (
-                <Popconfirm
-                  title="Revoke this key?"
-                  description="Requests using it will fail within 5 seconds."
-                  onConfirm={() => revoke.mutate(key.id)}
-                >
-                  <Button danger size="small">Revoke</Button>
-                </Popconfirm>
+                <Space>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(key)}>
+                    Edit
+                  </Button>
+                  <Popconfirm
+                    title="Revoke this key?"
+                    description="Requests using it will fail within 5 seconds."
+                    onConfirm={() => revoke.mutate(key.id)}
+                  >
+                    <Button danger size="small">Revoke</Button>
+                  </Popconfirm>
+                </Space>
               ),
           },
         ]}
       />
       <IssueKeyModal ws={ws} open={issueOpen} onClose={() => setIssueOpen(false)} />
+      <EditKeyModal
+        ws={ws}
+        vkey={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          void queryClient.invalidateQueries({ queryKey: [ws, "keys"] });
+          setEditing(null);
+        }}
+      />
     </Card>
   );
 }
@@ -103,17 +119,18 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
     enabled: open,
     retry: false,
   });
-  // Only offer providers that are actually configured (have an active credential).
-  const configuredProviders = [
-    ...new Set((credentials.data?.data ?? []).filter((c) => c.status === "ACTIVE").map((c) => c.provider)),
-  ];
-  const providerOptions = configuredProviders.length > 0 ? configuredProviders : ALL_PROVIDERS;
+  // Active credentials only — each is its own option so a workspace with
+  // several credentials for the same provider (e.g. multiple Anthropic
+  // accounts) can still be told apart by name, not just provider.
+  const credentialOptions = (credentials.data?.data ?? [])
+    .filter((c) => c.status === "ACTIVE")
+    .map((c) => ({ value: c.id, label: `${c.provider} · ${c.name}` }));
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [form] = Form.useForm();
 
   const issue = useMutation({
-    mutationFn: (values: { projectId: string; name: string; userId?: string; providerAllowlist?: Provider[] }) =>
+    mutationFn: (values: { projectId: string; name: string; userId?: string; credentialAllowlist?: string[] }) =>
       wsApi.issueKey(ws, values),
     onSuccess: (created) => {
       setIssuedKey(created.key);
@@ -184,17 +201,18 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
             />
           </Form.Item>
           <Form.Item
-            name="providerAllowlist"
-            label="Restrict to providers (optional)"
-            extra="Leave empty to allow every configured provider; otherwise the key only works for the selected ones."
+            name="credentialAllowlist"
+            label="Restrict to credentials (optional)"
+            extra="Leave empty to use the workspace's default credential per provider. Pick specific ones if you have several credentials for the same provider (e.g. multiple Anthropic accounts) and this key must always use a particular one."
           >
             <Select
               mode="multiple"
               allowClear
               showSearch
               optionFilterProp="label"
-              placeholder="All configured providers"
-              options={providerOptions.map((p) => ({ value: p, label: p }))}
+              placeholder="Workspace default per provider"
+              loading={credentials.isLoading}
+              options={credentialOptions}
             />
           </Form.Item>
           <Form.Item name="name" label="Key name" rules={[{ required: true }]}>
@@ -205,6 +223,97 @@ function IssueKeyModal({ ws, open, onClose }: { ws: string; open: boolean; onClo
           </Button>
         </Form>
       )}
+    </Modal>
+  );
+}
+
+function EditKeyModal({
+  ws, vkey, onClose, onSaved,
+}: { ws: string; vkey: VirtualKey | null; onClose: () => void; onSaved: () => void }) {
+  const credentials = useQuery({
+    queryKey: [ws, "credentials"],
+    queryFn: () => wsApi.credentials(ws),
+    enabled: vkey !== null,
+    retry: false,
+  });
+  const credentialOptions = (credentials.data?.data ?? [])
+    .filter((c) => c.status === "ACTIVE")
+    .map((c) => ({ value: c.id, label: `${c.provider} · ${c.name}` }));
+  const [error, setError] = useState<string | null>(null);
+  const [form] = Form.useForm();
+
+  // Re-seed the form whenever a different key is opened for editing.
+  useEffect(() => {
+    if (vkey) {
+      form.setFieldsValue({
+        name: vkey.name,
+        credentialAllowlist: vkey.credentialAllowlist,
+        rpmLimit: vkey.rpmLimit,
+        expiresAt: vkey.expiresAt ? dayjs(vkey.expiresAt) : undefined,
+      });
+      setError(null);
+    }
+  }, [vkey, form]);
+
+  const update = useMutation({
+    mutationFn: (values: {
+      name: string; credentialAllowlist?: string[];
+      rpmLimit?: number | null; expiresAt?: dayjs.Dayjs | null;
+    }) =>
+      wsApi.updateKey(ws, vkey!.id, {
+        name: values.name,
+        credentialAllowlist: values.credentialAllowlist ?? [],
+        rpmLimit: values.rpmLimit ?? null,
+        expiresAt: values.expiresAt ? values.expiresAt.toISOString() : null,
+      }),
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to save"),
+  });
+
+  if (!vkey) return null;
+
+  return (
+    <Modal title="Edit virtual key" open={vkey !== null} onCancel={onClose} footer={null}>
+      {error && <Alert type="error" message={error} style={{ marginBottom: 16 }} />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values: {
+          name: string; credentialAllowlist?: string[];
+          rpmLimit?: number | null; expiresAt?: dayjs.Dayjs | null;
+        }) => update.mutate(values)}
+      >
+        <Form.Item name="name" label="Key name" rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="credentialAllowlist"
+          label="Restrict to credentials (optional)"
+          extra="Leave empty to use the workspace's default credential per provider."
+        >
+          <Select
+            mode="multiple"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Workspace default per provider"
+            loading={credentials.isLoading}
+            options={credentialOptions}
+          />
+        </Form.Item>
+        <Form.Item name="rpmLimit" label="Rate limit (requests/minute, optional)">
+          <InputNumber min={1} style={{ width: "100%" }} placeholder="No limit" />
+        </Form.Item>
+        <Form.Item name="expiresAt" label="Expires (optional)">
+          <DatePicker showTime style={{ width: "100%" }} placeholder="Never" />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={update.isPending} block>
+          Save changes
+        </Button>
+      </Form>
     </Modal>
   );
 }
