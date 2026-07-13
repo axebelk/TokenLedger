@@ -1,4 +1,4 @@
-{$DOMAIN::8080} {
+{$DOMAIN} {
 	handle /api/* {
 		reverse_proxy api:4000
 	}

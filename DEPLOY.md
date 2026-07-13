@@ -6,7 +6,28 @@ instance using the Docker images published to the GitHub Container Registry
 
 - **CI that builds the images:** `.github/workflows/docker-publish.yml`
 - **Production stack:** `deploy/docker-compose.prod.yml`
-- **Reverse proxy config:** `deploy/Caddyfile`
+- **Host-proxy override (Path B):** `deploy/docker-compose.host-proxy.yml`
+- **Bundled reverse proxy (Path A):** `deploy/Caddyfile`
+- **Example vhost for your own nginx (Path B):** `deploy/nginx-site.conf.example`
+
+---
+
+## 0. Pick a path
+
+TokenTrail needs *something* terminating TLS on your domain and routing three
+paths to three containers: `/` → console, `/api/*` → control-plane API,
+`/gw/*` → LLM gateway. There are two ways to get that, and the right one
+depends on whether `:80`/`:443` on this host are already spoken for.
+
+| | Path A — bundled Caddy | Path B — your existing reverse proxy |
+|---|---|---|
+| **When** | Fresh box, TokenTrail is the only thing on it | You already run nginx/Caddy/Traefik here for other sites (`:80`/`:443` are taken) |
+| **HTTPS** | Automatic (Caddy + Let's Encrypt), zero config | You manage certs the way you already do (Certbot, etc.) |
+| **Compose command** | adds `--profile caddy` | layers `-f deploy/docker-compose.host-proxy.yml` |
+| **What you configure** | `DOMAIN` in `.env` | a vhost on your existing proxy (example provided) |
+
+Everything below is shared except step 6 (launch) and step 7 (proxy config),
+which fork per path.
 
 ---
 
@@ -14,7 +35,7 @@ instance using the Docker images published to the GitHub Container Registry
 
 The `Publish Docker images` workflow builds four images and pushes them to GHCR:
 
-| Image | Contents | Port |
+| Image | Contents | Port (internal) |
 |-------|----------|------|
 | `ghcr.io/<owner>/tokentrail-api` | Control-plane REST API | 4000 |
 | `ghcr.io/<owner>/tokentrail-gateway` | Data-plane LLM proxy | 4100 |
@@ -39,6 +60,13 @@ After the run, make the packages pullable: on GitHub open each package
 (**your profile → Packages**) → *Package settings* → set visibility to
 **Public**, or keep them private and log the server into GHCR (step 4).
 
+> ⚠️ **`latest` only moves on a version tag.** If you push commits to `main`
+> without cutting a `vX.Y.Z` tag, `latest` stays pinned to whatever the last
+> release was — potentially missing fixes that are already on `main` (tagged
+> `main`/`edge` instead). Pin `TAG=main` in `.env` unless you're specifically
+> tracking releases; either way, always check the pulled image's age (step 6)
+> before assuming a `pull` picked up what you expect.
+
 ---
 
 ## 2. Server prerequisites
@@ -48,20 +76,22 @@ After the run, make the packages pullable: on GitHub open each package
   ```bash
   curl -fsSL https://get.docker.com | sh
   ```
-- Ports **80** and **443** open to the internet
+- **Path A:** ports **80** and **443** free and open to the internet.
+  **Path B:** your existing proxy already holds those — nothing new to open.
 - A **domain** (e.g. `tokentrail.example.com`) with an **A record** pointing at
-  the server's public IP — required for automatic HTTPS
+  the server's public IP.
 
 ---
 
 ## 3. Get the deploy files onto the server
 
-You only need three files on the server — clone the repo or copy them:
+You only need the `deploy/` folder plus `.env` — clone the repo or copy them:
 
 ```bash
 git clone https://github.com/<owner>/<repo>.git tokentrail
 cd tokentrail
-# the pieces we use: deploy/docker-compose.prod.yml, deploy/Caddyfile, .env
+# the pieces we use: deploy/docker-compose.prod.yml,
+# deploy/docker-compose.host-proxy.yml (Path B), deploy/Caddyfile (Path A), .env
 ```
 
 ---
@@ -88,27 +118,29 @@ cp .env.example .env
 Fill in these **required** values:
 
 ```dotenv
-# Registry + version (lowercase owner)
+# Registry + version (lowercase owner) — see the "latest" warning in step 1
 IMAGE_PREFIX=ghcr.io/<owner>/tokentrail
-TAG=v0.1.0                       # pin a release; avoid "latest" in prod
+TAG=main                          # or a pinned vX.Y.Z release
 
 # Public URL — MUST match your domain, used for invite links & CORS
 PUBLIC_BASE_URL=https://tokentrail.example.com
-DOMAIN=tokentrail.example.com    # enables Caddy auto-HTTPS
+
+# Path A only — enables Caddy's automatic HTTPS. Leave blank for Path B.
+DOMAIN=tokentrail.example.com
 
 # Secrets — generate fresh, keep safe
-POSTGRES_PASSWORD=...            # openssl rand -base64 24
-TOKENTRAIL_MASTER_KEY=...        # openssl rand -base64 32  (encrypts provider keys)
-JWT_SECRET=...                   # openssl rand -base64 48
+POSTGRES_PASSWORD=...             # openssl rand -base64 24
+TOKENTRAIL_MASTER_KEY=...         # openssl rand -base64 32  (encrypts provider keys)
+JWT_SECRET=...                    # openssl rand -base64 48
 
 # Platform super-admins (comma-separated emails that see the Platform console)
 SUPERADMIN_EMAILS=you@example.com
 
 # Optional
 EVENT_RETENTION_DAYS=90
-GATEWAY_FAILURE_POLICY=FAIL_OPEN # FAIL_OPEN keeps traffic flowing if metering hiccups
-SMTP_URL=                        # leave blank to use copyable invite links instead of email
-LICENSE_KEY=                     # Enterprise only
+GATEWAY_FAILURE_POLICY=FAIL_OPEN  # FAIL_OPEN keeps traffic flowing if metering hiccups
+SMTP_URL=                         # leave blank to use copyable invite links instead of email
+LICENSE_KEY=                      # Enterprise only
 ```
 
 Generate all three secrets at once:
@@ -120,23 +152,38 @@ printf 'POSTGRES_PASSWORD=%s\nTOKENTRAIL_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
 
 > ⚠️ **Keep `TOKENTRAIL_MASTER_KEY` safe.** It encrypts every stored provider
 > credential — losing it orphans them and they must be re-entered.
+>
+> ⚠️ **Secrets pasted into a chat/ticket/AI assistant should be treated as
+> burned.** Rotate `POSTGRES_PASSWORD`, `TOKENTRAIL_MASTER_KEY`, and
+> `JWT_SECRET` if you ever shared them outside this file.
 
 ---
 
 ## 6. Launch
 
+**Path A — bundled Caddy** (fresh host, nothing else on `:80`/`:443`):
+
 ```bash
-docker compose -f deploy/docker-compose.prod.yml --env-file .env pull
-docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d
+docker compose -f deploy/docker-compose.prod.yml --profile caddy --env-file .env pull
+docker compose -f deploy/docker-compose.prod.yml --profile caddy --env-file .env up -d
 ```
 
-What happens:
+**Path B — your existing reverse proxy:**
+
+```bash
+docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.host-proxy.yml \
+  --env-file .env pull
+docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.host-proxy.yml \
+  --env-file .env up -d
+```
+Then configure your proxy — see **step 7**, don't skip it.
+
+Both paths, what happens:
 
 1. Postgres and Redis start and become healthy.
 2. The **`migrate`** one-shot runs `prisma migrate deploy` + seeds the pricing
-   catalog, then exits.
-3. `api`, `gateway`, `worker`, `web`, and `caddy` start.
-4. Caddy fetches a Let's Encrypt certificate for `DOMAIN` and serves HTTPS.
+   catalog, then exits (exit code `0`).
+3. `api`, `gateway`, `worker`, `web` start (and `caddy` too, on Path A).
 
 Check status and logs:
 
@@ -145,24 +192,72 @@ docker compose -f deploy/docker-compose.prod.yml ps
 docker compose -f deploy/docker-compose.prod.yml logs -f api gateway
 ```
 
-Visit **`https://tokentrail.example.com`**, register the first account (its
-email should be in `SUPERADMIN_EMAILS` to get the **Platform** console), then
-add a provider credential and issue a virtual key from **Connect**.
+If `migrate` shows a non-zero exit or `sh: .../prisma: not found`, you likely
+pulled a stale image — see the `latest`-tag warning in step 1 and the
+troubleshooting table below.
+
+---
+
+## 7. Reverse proxy (Path B only — Path A's Caddy is already configured)
+
+Point your existing proxy at the three ports
+`docker-compose.host-proxy.yml` published on `127.0.0.1`:
+
+| Path | Upstream |
+|------|----------|
+| `/` (everything else) | `127.0.0.1:3000` (console) |
+| `/api/*` | `127.0.0.1:4000` (API) |
+| `/gw/*` | `127.0.0.1:4100` (gateway, **streamed** responses) |
+
+A ready-to-adapt nginx vhost is at `deploy/nginx-site.conf.example` — copy it,
+set your `server_name` and cert paths, `nginx -t && systemctl reload nginx`.
+
+> ⚠️ **The one gotcha that will 404 every API call:** nginx's `proxy_pass`
+> rewrites the request path if its target has a trailing slash (or any path
+> component) while the `location` prefix doesn't exactly match the request.
+> TokenTrail's API only answers under `/api/v1/...` — if your proxy strips or
+> mangles `/api` before forwarding, you'll see:
+> ```json
+> {"message":"Route POST://v1/auth/register not found","statusCode":404}
+> ```
+> (missing or double-slashed `/api` — same bug either way). **Fix: `proxy_pass`
+> must have no trailing slash and no path** (`proxy_pass http://127.0.0.1:4000;`
+> not `.../4000/;`) — that forwards the original URI byte-for-byte, no
+> rewriting. The example file already does this; if you hand-write your own
+> vhost, don't "clean up" that missing trailing slash.
+>
+> The `/gw/*` route also needs `proxy_buffering off` — LLM responses are
+> streamed token-by-token (SSE/NDJSON), and a buffering proxy delivers them in
+> one lump at the end instead, which breaks streaming clients.
+
+---
+
+## 8. First login
+
+Visit **`https://tokentrail.example.com`** and **register the first account**
+— there's no default login, registration creates your user *and* workspace in
+one step. Use an email listed in `SUPERADMIN_EMAILS` to also get the
+**Platform** console. Then add a provider credential and issue a virtual key
+from **Connect**.
 
 The gateway base URL your users point their SDKs at is
 `https://tokentrail.example.com/gw/<provider>/…`.
 
 ---
 
-## 7. Upgrades
+## 9. Upgrades
 
-Bump `TAG` in `.env` to the new release (or re-pull `latest`) and re-apply — the
-`migrate` job runs any new migrations automatically before the services restart:
+Bump `TAG` in `.env` to the new release (or re-pull `main`/`latest`) and
+re-apply — the `migrate` job runs any new migrations automatically before the
+services restart. Use whichever `-f`/`--profile` combination matches your path
+(step 6):
 
 ```bash
 # edit TAG=v0.2.0 in .env
-docker compose -f deploy/docker-compose.prod.yml --env-file .env pull
-docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d
+docker compose -f deploy/docker-compose.prod.yml [--profile caddy | -f deploy/docker-compose.host-proxy.yml] \
+  --env-file .env pull
+docker compose -f deploy/docker-compose.prod.yml [--profile caddy | -f deploy/docker-compose.host-proxy.yml] \
+  --env-file .env up -d
 ```
 
 Zero-downtime-ish: Compose recreates changed services in place; the gateway can
@@ -170,7 +265,7 @@ be scaled with `GATEWAY_REPLICAS=2` in `.env` for rolling capacity.
 
 ---
 
-## 8. Backups
+## 10. Backups
 
 The stateful data lives in two named volumes: **`tokentrail_pgdata`** (the
 database — your source of truth) and `tokentrail_redisdata` (in-flight metering
@@ -185,26 +280,33 @@ Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgre
 
 ---
 
-## 9. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom | Likely cause / fix |
 |--------|--------------------|
 | `denied` / `manifest unknown` on `pull` | Packages are private — do step 4, or make them public. Check `IMAGE_PREFIX` is lowercase. |
-| Caddy TLS errors / stuck on HTTP | DNS A record not pointing at the server yet, or ports 80/443 blocked by a firewall/security group. |
+| `migrate` exits 127, `sh: .../prisma: not found` | Pulled an old image built before the `prisma` CLI fix. `pull` again, check `TAG` isn't silently defaulting to a stale `latest` (step 1), and compare the image's `CREATED` time: `docker compose ... images \| grep api`. |
+| `docker compose up` reuses the old container/image | `pull` doesn't happen automatically — run `pull` explicitly before every `up` when you expect new code. |
+| API returns `Route POST://v1/... not found` (double slash or missing `/api`) | Your reverse proxy is stripping/mangling the `/api` prefix — see the gotcha in step 7. Not applicable on Path A (Caddy's `Caddyfile` is already correct). |
+| Site loads but login/register calls fail with a **CORS** or network error | `PUBLIC_BASE_URL` in `.env` doesn't match the domain you're actually browsing to — fix and restart `api`. |
+| Caddy TLS errors / stuck on HTTP (Path A) | DNS A record not pointing at the server yet, or ports 80/443 blocked by a firewall/security group, or another process already bound to 80/443 (use Path B instead). |
 | `api` restarts, DB errors | `migrate` didn't finish — check `logs migrate`; verify `POSTGRES_PASSWORD` matches in `.env`. |
 | Invite emails never arrive | `SMTP_URL` unset — that's fine; use **Members → Copy invite link** instead. |
-| No **Platform** menu for admin | The signed-in email isn't in `SUPERADMIN_EMAILS`; update `.env` and `up -d` to restart `api`. |
+| No **Platform** menu for admin | The signed-in email isn't in `SUPERADMIN_EMAILS`; update `.env` and `up -d --force-recreate api` to restart with it picked up. |
 | Provider credentials all invalid after a redeploy | `TOKENTRAIL_MASTER_KEY` changed — restore the original key. |
+| LLM responses arrive all at once instead of streaming | Your reverse proxy is buffering `/gw/*` — add `proxy_buffering off` (nginx) or the equivalent for your proxy. |
 
 ---
 
 ### Quick reference
 
 ```bash
+# (substitute your path's -f/--profile flags from step 6 everywhere below)
+
 # start / update
-docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d
+docker compose -f deploy/docker-compose.prod.yml [...] --env-file .env up -d
 # stop (keeps data)
-docker compose -f deploy/docker-compose.prod.yml down
+docker compose -f deploy/docker-compose.prod.yml [...] down
 # tail logs
-docker compose -f deploy/docker-compose.prod.yml logs -f
+docker compose -f deploy/docker-compose.prod.yml [...] logs -f
 ```
