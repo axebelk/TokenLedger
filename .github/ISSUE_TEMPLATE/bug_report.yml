@@ -1,0 +1,88 @@
+name: Bug report
+description: Something is broken, unexpected, or hard to use.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The fields below help us
+        reproduce and fix it faster — but please skip any that don't apply.
+
+  - type: input
+    id: version
+    attributes:
+      label: TokenTrail version
+      description: "Release you're on (e.g. `v0.1.0`, `main` commit SHA, or `latest`)."
+      placeholder: "v0.1.0"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Install method
+      options:
+        - Docker (Path A — bundled Caddy)
+        - Docker (Path B — existing reverse proxy)
+        - From source (pnpm + Node)
+        - Docker image pulled from GHCR (path A)
+        - Docker image pulled from GHCR (path B)
+        - Helm / Kubernetes
+        - Other (please describe in body)
+    validations:
+      required: false
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: A clear description of the bug — what you expected, what happened instead.
+      placeholder: |
+        Expected: clicking "Issue key" opens a modal.
+        Actual: clicking it does nothing (no console errors visible).
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal sequence to reproduce — click path, curl command, request payload, etc.
+      placeholder: |
+        1. Create a workspace
+        2. Add an Anthropic credential named "Test"
+        3. Click "Issue key" on Virtual Keys page
+        4. Observe nothing happens
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Host OS, Docker version, Node version, browser (if UI-related), reverse proxy if relevant.
+      placeholder: "Ubuntu 22.04, Docker 24.0.7, nginx 1.24, Chrome 124"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: |
+        Paste relevant log lines (use `docker compose logs api gateway worker` for
+        server logs; browser DevTools → Network tab for UI issues). **Always
+        include the `requestId` from any 4xx/5xx response — it makes
+        tracing trivial.**
+    validations:
+      required: false
+
+  - type: checkbox
+    id: existing
+    attributes:
+      label: I checked
+      description: |
+        - [ ] I searched existing issues for duplicates
+        - [ ] I'm on the latest release / `main`
+    validations:
+      required: false
