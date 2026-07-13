@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/axebelk/TokenTrail/discussions
+    about: For general questions, design discussions, and "how do I…?" help.
+  - name: Security disclosure
+    url: https://github.com/axebelk/TokenTrail/blob/main/SECURITY.md
+    about: Report a vulnerability privately before opening a public issue.
+  - name: Documentation
+    url: https://github.com/axebelk/TokenTrail/tree/main/docs
+    about: Full design set — PRD, SRS, architecture, schema, REST API.

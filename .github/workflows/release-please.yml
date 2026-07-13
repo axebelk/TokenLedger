@@ -1,0 +1,61 @@
+name: Release Please
+
+# Cuts a SemVer release (and CHANGELOG.md update) from conventional commit
+# messages on main. On each new release PR it also re-tags the GHCR Docker
+# images published by docker-publish.yml by bumping TAG=latest.
+#
+# Conventional commits this honors:
+#   feat: ...   → minor bump
+#   fix: ...    → patch bump
+#   feat!: ...  → major bump (BREAKING CHANGE footer also works)
+#   chore:, docs:, refactor:, test:, style:, build:, ci:   → ignored for release notes
+#   chore(deps): ... → patch bump (commit-level dependency bump)
+#
+# Full reference: https://github.com/googleapis/release-please
+#
+# Secrets: needs `contents: write` (for the PR), `pull-requests: write`
+# (for the issue), and `id-token: write` (for the OIDC publish job, even
+# though we don't publish from here yet — kept for parity with the docker
+# workflow).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Also bump a tag like "main" on the api/gateway/worker/web GHCR images
+          # whenever a release is published — keeps Docker images in sync with the
+          # GitHub release (the docker-publish.yml workflow does the actual build).
+          extra-files: |
+            deploy/docker-compose.prod.yml
+
+      # When a new release is published, re-tag the published GHCR images as
+      # "latest" so users tracking :latest get the new release without having
+      # to pin a tag. Skipped on the very first run (no published releases yet).
+      - name: Retag GHCR images as :latest
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          set -euo pipefail
+          VER=${{ steps.release.outputs.tag_name }}
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          for app in api gateway worker web; do
+            docker buildx imagetools create \
+              --tag "ghcr.io/${OWNER}/tokentrail-${app}:latest" \
+              --tag "ghcr.io/${OWNER}/tokentrail-${app}:${VER#v}" \
+              "ghcr.io/${OWNER}/tokentrail-${app}:${VER}"
+          done
+        env:
+          DOCKER_BUILDX_TOKEN: ${{ github.token }}

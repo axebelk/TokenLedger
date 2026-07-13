@@ -308,6 +308,7 @@ Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgre
 |--------|--------------------|
 | `denied` / `manifest unknown` on `pull` | Packages are private — do step 4, or make them public. Check `IMAGE_PREFIX` is lowercase. |
 | `migrate` exits 127, `sh: .../prisma: not found` | Pulled an old image built before the `prisma` CLI fix. `pull` again, check `TAG` isn't silently defaulting to a stale `latest` (step 1), and compare the image's `CREATED` time: `docker compose ... images \| grep api`. |
+| `project name "tokentrail" already in use` | Another compose project on this host (e.g. someone else's) is already registered as `tokentrail`. Edit the very first line of the compose file (`name: tokentrail`) to `name: tokentrail-aitrack` (or similar). The internal service names (`api`, `gateway`, …) don't change, only the project prefix `docker compose -p <that-name> …` uses. |
 | `docker compose up` reuses the old container/image | `pull` doesn't happen automatically — run `pull` explicitly before every `up` when you expect new code. |
 | API returns `Route POST://v1/... not found` (double slash or missing `/api`) | Your reverse proxy is stripping/mangling the `/api` prefix — see the gotcha in step 7. Not applicable on Path A (Caddy's `Caddyfile` is already correct). |
 | Site loads but login/register calls fail with a **CORS** or network error | `PUBLIC_BASE_URL` in `.env` doesn't match the domain you're actually browsing to — fix and restart `api`. |

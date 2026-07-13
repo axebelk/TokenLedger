@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose something TokenTrail should do.
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Is this about a new AI provider? See "Add a provider" in
+        [CONTRIBUTING.md](../../blob/main/CONTRIBUTING.md) — most of the
+        time the answer is "yes, send a PR" rather than an issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: The user outcome you're after, stated without prescribing a solution.
+      placeholder: |
+        Today I have to log into the console to rotate a provider key. I want
+        to be able to do it from a Slack command so I'm not context-switching
+        during an incident.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alt
+    attributes:
+      label: What alternatives have you considered?
+      description: Other ways you worked around this; why they don't work for you.
+      placeholder: |
+        - Scripts that hit the API directly (works but feels hacky, no audit trail)
+        - A separate rotation tool (operationally heavy)
+    validations:
+      required: false
+
+  - type: textarea
+    id: ed_fit
+    attributes:
+      label: Where this lives in the edition split
+      description: |
+        Community edition (Apache-2.0, free forever) or Enterprise edition
+        (commercial)? See [CONTRIBUTING.md](../../blob/main/CONTRIBUTING.md#ground-rules)
+        — if unsure, pick "Unsure" and we'll decide together in the issue.
+      placeholder: |
+        Community edition feels right — Slack command would be a basic
+        operator convenience, not compliance/control.
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, mockups, related issues/PRs, etc.
+    validations:
+      required: false
