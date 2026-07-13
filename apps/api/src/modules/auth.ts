@@ -16,15 +16,19 @@ import type { preHandlerHookHandler } from "fastify";
 
 const REFRESH_COOKIE = "tt_refresh";
 
+// Email is stored as citext (case-insensitive) in Postgres, so lookups
+// already match regardless of case — normalizing here too is defense-in-depth
+// (covers a deployment where the citext extension somehow isn't active) and
+// keeps the stored/displayed value in one canonical casing.
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.toLowerCase()),
   password: z.string().min(8).max(200),
   name: z.string().min(1).max(100),
   workspaceName: z.string().min(1).max(100).optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((v) => v.toLowerCase()),
   password: z.string(),
 });
 

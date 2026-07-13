@@ -11,7 +11,8 @@ import { inviteEmail, type Mailer } from "../lib/mailer.js";
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const inviteSchema = z.object({
-  email: z.string().email(),
+  // Same canonical-casing normalization as auth.ts — see the comment there.
+  email: z.string().email().transform((v) => v.toLowerCase()),
   role: z.enum(["ADMIN", "MEMBER", "VIEWER"]).default("MEMBER"), // OWNER is never invitable
 });
 
