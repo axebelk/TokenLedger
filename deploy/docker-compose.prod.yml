@@ -17,14 +17,16 @@ name: tokentrail
 #     docker compose -f deploy/docker-compose.prod.yml \
 #       -f deploy/docker-compose.host-proxy.yml --env-file .env up -d
 #
-# All secrets come from the --env-file (.env). See DEPLOY.md.
+# All secrets come from the --env-file (.env). See DEPLOY.md. Required
+# values use ${VAR:?...} so `up` fails fast with a clear message instead of
+# deploying with an empty secret.
 
 x-app-env: &app-env
-  DATABASE_URL: postgresql://tokentrail:${POSTGRES_PASSWORD}@postgres:5432/tokentrail
+  DATABASE_URL: postgresql://tokentrail:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/tokentrail
   REDIS_URL: redis://redis:6379
-  TOKENTRAIL_MASTER_KEY: ${TOKENTRAIL_MASTER_KEY}
-  JWT_SECRET: ${JWT_SECRET}
-  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+  TOKENTRAIL_MASTER_KEY: ${TOKENTRAIL_MASTER_KEY:?set TOKENTRAIL_MASTER_KEY in .env — openssl rand -base64 32}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — openssl rand -base64 48}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env to your public https:// domain}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   NODE_ENV: production
   EXPORTS_DIR: /data/exports
@@ -37,7 +39,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: tokentrail
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: tokentrail
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
@@ -89,6 +91,10 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
+    # NOTE: `deploy.replicas` only takes effect under `docker stack deploy`
+    # (Swarm) — plain `docker compose up` ignores it silently. To actually
+    # run more than one gateway container, scale explicitly instead:
+    #   docker compose up -d --scale gateway=3
     deploy:
       replicas: ${GATEWAY_REPLICAS:-1}
     restart: unless-stopped
