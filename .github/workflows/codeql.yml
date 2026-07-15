@@ -1,0 +1,39 @@
+name: CodeQL
+
+# Static analysis security scanning (SAST) for JS/TS. Results appear under
+# the repo's Security tab → Code scanning alerts, and back the "CodeQL"
+# badge in README.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly sweep catches newly-disclosed query patterns even with no code changes.
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # required to upload SARIF results
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none # pure JS/TS analysis — no compilation needed
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
