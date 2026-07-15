@@ -1,0 +1,37 @@
+name: OpenSSF Scorecard
+
+# Publishes a security-posture score (branch protection, pinned deps,
+# dangerous workflow patterns, code review coverage, etc.) to the public
+# Scorecard API — https://api.scorecard.dev — which is what backs the
+# "OpenSSF Scorecard" badge in README.md. Read-only; doesn't fail CI.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 3" # weekly — most Scorecard checks look at repo config, not code
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # upload SARIF to the Security tab
+      id-token: write # publish results to api.scorecard.dev
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: ossf/scorecard-action@v2.4.1
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

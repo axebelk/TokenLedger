@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # Root pnpm workspace — covers apps/*, packages/*, ee/* via the single
+  # root lockfile.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      # Batch patch/minor bumps of same-vendor packages into one PR instead
+      # of one-PR-per-package noise; majors still get their own PR for review.
+      antd:
+        patterns: ["antd", "@ant-design/*"]
+      react-ecosystem:
+        patterns: ["react", "react-dom", "react-router-dom", "@tanstack/*"]
+      fastify:
+        patterns: ["fastify", "@fastify/*"]
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      dev-tooling:
+        patterns: ["typescript", "tsx", "vitest", "eslint*", "@types/*"]
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions workflow versions.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Docker base images referenced in the Dockerfiles (node:22-alpine, etc).
+  - package-ecosystem: "docker"
+    directories:
+      - "/apps/api"
+      - "/apps/gateway"
+      - "/apps/worker"
+      - "/apps/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(docker)"

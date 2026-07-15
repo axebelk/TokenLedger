@@ -14,14 +14,23 @@
 <p align="center">
   <a href="https://github.com/axebelk/TokenTrail/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/License-Apache_2.0-green.svg"></a>
   <a href="https://github.com/axebelk/TokenTrail/releases"><img alt="Release" src="https://img.shields.io/github/v/release/axebelk/TokenTrail"></a>
-  <a href="https://github.com/axebelk/TokenTrail/actions/workflows/docker-publish.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/axebelk/TokenTrail/docker-publish.yml?label=docker"></a>
-  <a href="https://github.com/axebelk/TokenTrail/pkgs/container/tokentrail-api"><img alt="Image: api" src="https://ghcr.io/axebelk/TokenTrail/api?label=img%3Aapi"></a>
+  <a href="https://github.com/axebelk/TokenTrail/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/axebelk/TokenTrail/ci.yml?branch=main&label=tests"></a>
+  <a href="https://github.com/axebelk/TokenTrail/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/axebelk/TokenTrail/codeql.yml?branch=main&label=codeql"></a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/axebelk/TokenTrail"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/axebelk/TokenTrail/badge"></a>
   <a href="https://github.com/axebelk/TokenTrail/issues"><img alt="Issues" src="https://img.shields.io/github/issues/axebelk/TokenTrail"></a>
   <a href="https://github.com/axebelk/TokenTrail/blob/main/CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
+  <a href="https://github.com/axebelk/TokenTrail/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/axebelk/TokenTrail"></a>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> · <a href="#features">Features</a> · <a href="#supported-providers">Providers</a> · <a href="INSTALL.md">Install</a> · <a href="DEPLOY.md">Deploy</a> · <a href="docs/">Docs</a>
+  <a href="https://github.com/axebelk/TokenTrail/pkgs/container/tokentrail-api"><img alt="ghcr.io: api" src="https://img.shields.io/badge/ghcr.io-tokentrail--api-blue"></a>
+  <a href="https://github.com/axebelk/TokenTrail/pkgs/container/tokentrail-gateway"><img alt="ghcr.io: gateway" src="https://img.shields.io/badge/ghcr.io-tokentrail--gateway-blue"></a>
+  <a href="https://github.com/axebelk/TokenTrail/pkgs/container/tokentrail-worker"><img alt="ghcr.io: worker" src="https://img.shields.io/badge/ghcr.io-tokentrail--worker-blue"></a>
+  <a href="https://github.com/axebelk/TokenTrail/pkgs/container/tokentrail-web"><img alt="ghcr.io: web" src="https://img.shields.io/badge/ghcr.io-tokentrail--web-blue"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> · <a href="#features">Features</a> · <a href="#supported-providers">Providers</a> · <a href="INSTALL.md">Install</a> · <a href="DEPLOY.md">Deploy</a> · <a href="docs/">Docs</a> · <a href="#quality--security">Security</a>
 </p>
 
 ---
@@ -167,6 +176,29 @@ Versions follow [SemVer](https://semver.org/) and are cut automatically by
 [Release Please](https://github.com/googleapis/release-please) from
 conventional commit messages — see the [Releases page](https://github.com/axebelk/TokenTrail/releases)
 for the changelog. To upgrade, change `TAG` in `.env` and `docker compose pull && up -d`.
+
+Every push to `main` builds and publishes four versioned images to GHCR —
+`tokentrail-api`, `tokentrail-gateway`, `tokentrail-worker`, `tokentrail-web`
+(see the package badges above) — via `.github/workflows/docker-publish.yml`.
+
+## Quality & security
+
+- **CI** (`.github/workflows/ci.yml`) — typecheck, unit tests, and a full
+  build run on every push and PR to `main`. The badge above reflects the
+  latest run on `main`.
+- **CodeQL** (`.github/workflows/codeql.yml`) — static analysis (SAST) for
+  JS/TS on every push/PR plus a weekly scheduled scan; results land under
+  the repo's **Security → Code scanning** tab.
+- **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — a weekly,
+  automated security-posture score (branch protection, pinned dependencies,
+  dangerous workflow patterns, review coverage, …) published to the public
+  [Scorecard API](https://securityscorecards.dev) so anyone can audit it
+  independently, not just take our word for it.
+- **Dependabot** (`.github/dependabot.yml`) — weekly automated PRs for npm
+  packages, Docker base images, and GitHub Actions versions, grouped by
+  vendor to keep the PR volume sane.
+- **Vulnerability disclosure** — see [SECURITY.md](SECURITY.md) for the
+  private reporting process and supported-versions policy.
 
 ## License
 
