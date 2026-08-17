@@ -1,13 +1,13 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { baseEnv, databaseEnv, loadConfig, redisEnv } from "@tokentrail/config";
-import { createLogger } from "@tokentrail/telemetry";
-import { createPrismaClient } from "@tokentrail/db";
+import { baseEnv, databaseEnv, loadConfig, redisEnv } from "@tokenledger/config";
+import { createLogger } from "@tokenledger/telemetry";
+import { createPrismaClient } from "@tokenledger/db";
 import {
   createQueue, createRedis, createWorker, CONSUMER_GROUPS, HOUSEKEEPING, QUEUES, STREAMS, type Job,
-} from "@tokentrail/queue";
-import type { ExportJobData } from "@tokentrail/shared";
+} from "@tokenledger/queue";
+import type { ExportJobData } from "@tokenledger/shared";
 import { startIngest } from "./ingest/consumer.js";
 import { runExportJob } from "./jobs/export-csv.js";
 import { runRetention } from "./jobs/retention.js";
@@ -25,7 +25,7 @@ const config = loadConfig(
 const logger = createLogger("worker", config.LOG_LEVEL);
 const prisma = createPrismaClient(config.DATABASE_URL);
 const redis = createRedis(config.REDIS_URL);
-const exportsDir = config.EXPORTS_DIR ?? join(tmpdir(), "tokentrail-exports");
+const exportsDir = config.EXPORTS_DIR ?? join(tmpdir(), "tokenledger-exports");
 
 // Create the stream + consumer group idempotently before consuming.
 try {
@@ -102,4 +102,4 @@ async function shutdown(signal: string) {
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
-logger.info("TokenTrail worker started (ingest consumer active)");
+logger.info("TokenLedger worker started (ingest consumer active)");

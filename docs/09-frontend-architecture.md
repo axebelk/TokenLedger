@@ -1,4 +1,4 @@
-# TokenTrail — Frontend Architecture
+# TokenLedger — Frontend Architecture
 
 **Stack:** React 18 + TypeScript (strict) · Vite · Ant Design 5 · TanStack React Query v5 · Recharts · React Router v6 · Zustand (thin UI state) · dayjs
 
@@ -102,7 +102,7 @@ Rules: money formatted by shared `formatUsd` (compact ≥ $10k); dimension color
 
 ## 6. White-Labeling Hook (EE)
 
-`GET /meta/branding` (public per host) → `{productName, logoUrl, colors}` → feeds `ConfigProvider theme.token.colorPrimary`, document title, logo slot, email links. CE simply gets TokenTrail defaults — zero conditional styling elsewhere.
+`GET /meta/branding` (public per host) → `{productName, logoUrl, colors}` → feeds `ConfigProvider theme.token.colorPrimary`, document title, logo slot, email links. CE simply gets TokenLedger defaults — zero conditional styling elsewhere.
 
 ## 7. Key UX Flows
 

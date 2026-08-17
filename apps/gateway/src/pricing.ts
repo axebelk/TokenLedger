@@ -1,8 +1,8 @@
 import type pg from "pg";
-import type { Provider } from "@tokentrail/shared";
-import { matchPrice, type PriceEntry } from "@tokentrail/pricing";
-import { PRICING_SEED } from "@tokentrail/db/seed";
-import type { Logger } from "@tokentrail/telemetry";
+import type { Provider } from "@tokenledger/shared";
+import { matchPrice, type PriceEntry } from "@tokenledger/pricing";
+import { PRICING_SEED } from "@tokenledger/db/seed";
+import type { Logger } from "@tokenledger/telemetry";
 import type { PricingSource } from "./types.js";
 
 function seedCatalog(): PriceEntry[] {

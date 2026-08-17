@@ -1,7 +1,7 @@
 import { readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
-import type { PrismaClient } from "@tokentrail/db";
-import type { Logger } from "@tokentrail/telemetry";
+import type { PrismaClient } from "@tokenledger/db";
+import type { Logger } from "@tokenledger/telemetry";
 
 const DELETE_BATCH = 5000;
 

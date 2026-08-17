@@ -1,6 +1,6 @@
 {
   "release-type": "node",
-  "package-name": "tokentrail",
+  "package-name": "tokenledger",
   "include-component-in-tag": false,
   "version": "0.1.0",
   "bump-minor-pre-major": true,

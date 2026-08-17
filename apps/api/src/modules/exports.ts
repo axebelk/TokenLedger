@@ -2,9 +2,9 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { hasMinimumRole, NotFoundError, type ExportFilters, type ExportParams } from "@tokentrail/shared";
-import { type Queue } from "@tokentrail/queue";
-import { Prisma, type PrismaClient } from "@tokentrail/db";
+import { hasMinimumRole, NotFoundError, type ExportFilters, type ExportParams } from "@tokenledger/shared";
+import { type Queue } from "@tokenledger/queue";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const createSchema = z.object({
@@ -106,7 +106,7 @@ export function registerExportsModule(app: FastifyInstance, opts: ExportsModuleO
     }
     reply
       .header("content-type", "text/csv; charset=utf-8")
-      .header("content-disposition", `attachment; filename="tokentrail-export-${job.id}.csv"`);
+      .header("content-disposition", `attachment; filename="tokenledger-export-${job.id}.csv"`);
     return reply.send(createReadStream(job.filePath));
   });
 }

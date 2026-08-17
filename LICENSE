@@ -1,4 +1,4 @@
-Copyright 2026 TokenTrail contributors
+Copyright 2026 TokenLedger contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 ---
 
 NOTE: Everything in this repository is Apache-2.0 EXCEPT the "ee/" directory,
-which is source-visible commercial software under ee/LICENSE (TokenTrail
+which is source-visible commercial software under ee/LICENSE (TokenLedger
 Enterprise License). Before the first public release, replace this file with
 the full canonical Apache License 2.0 text from
 https://www.apache.org/licenses/LICENSE-2.0.txt

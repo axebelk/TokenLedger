@@ -18,4 +18,4 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
 await app.listen({ port: config.API_PORT, host: "0.0.0.0" });
-app.log.info(`TokenTrail API listening on :${config.API_PORT}`);
+app.log.info(`TokenLedger API listening on :${config.API_PORT}`);

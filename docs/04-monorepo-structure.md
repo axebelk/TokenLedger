@@ -1,16 +1,16 @@
-# TokenTrail — Monorepo Structure
+# TokenLedger — Monorepo Structure
 
 **Tooling:** pnpm workspaces + Turborepo · TypeScript project references · Node 22 LTS · ESM throughout.
 
 ```
-tokentrail/
+tokenledger/
 ├── package.json                    # root: scripts, engines, pnpm workspace root
 ├── pnpm-workspace.yaml             # apps/*, packages/*, ee/*
 ├── turbo.json                      # build/test/lint pipelines, remote-cache ready
-├── tsconfig.base.json              # strict, NodeNext, paths for @tokentrail/*
+├── tsconfig.base.json              # strict, NodeNext, paths for @tokenledger/*
 ├── .env.example                    # every variable documented
 ├── LICENSE                         # Apache-2.0
-├── ee/LICENSE                      # TokenTrail Enterprise License (source-visible, commercial)
+├── ee/LICENSE                      # TokenLedger Enterprise License (source-visible, commercial)
 ├── docker-compose.yml              # full stack (doc 11)
 ├── docker-compose.dev.yml          # infra only (pg, redis, mailpit) for local dev
 │
@@ -116,5 +116,5 @@ prechecks.push(budgetEnforcementCheck);
 
 ## Conventions
 - **One image per app**, multi-stage Dockerfiles, distroless runtime, non-root.
-- **Changesets** for versioning; conventional commits; CI publishes `ghcr.io/tokentrail/{gateway,api,worker,web}`.
+- **Changesets** for versioning; conventional commits; CI publishes `ghcr.io/tokenledger/{gateway,api,worker,web}`.
 - **Testing pyramid:** adapters & pricing = pure unit tests with recorded fixtures; gateway = integration against mock provider server (`scripts/mock-provider`); e2e = compose-based smoke in CI.

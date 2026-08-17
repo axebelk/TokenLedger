@@ -1,5 +1,5 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
-import type { PrismaClient } from "@tokentrail/db";
+import type { PrismaClient } from "@tokenledger/db";
 
 /**
  * Instance super-admin API (cross-workspace). Guarded by SUPERADMIN_EMAILS —

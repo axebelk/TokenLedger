@@ -11,7 +11,7 @@ function AuthShell({ title, children }: { title: string; children: React.ReactNo
         <div className="tt-auth__head">
           <div className="tt-auth__brand">
             <span className="tt-auth__brand-mark" />
-            TokenTrail
+            TokenLedger
           </div>
           <div className="tt-auth__sub">AI cost governance &amp; usage analytics</div>
         </div>

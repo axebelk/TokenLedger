@@ -1,4 +1,4 @@
-name: tokentrail
+name: tokenledger
 
 # Production stack that BUILDS every image from this checkout — use this
 # instead of deploy/docker-compose.prod.yml when you'd rather build on the
@@ -20,9 +20,9 @@ name: tokentrail
 # with an empty secret.
 
 x-app-env: &app-env
-  DATABASE_URL: postgresql://tokentrail:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/tokentrail
+  DATABASE_URL: postgresql://tokenledger:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/tokenledger
   REDIS_URL: redis://redis:6379
-  TOKENTRAIL_MASTER_KEY: ${TOKENTRAIL_MASTER_KEY:?set TOKENTRAIL_MASTER_KEY in .env — openssl rand -base64 32}
+  TOKENLEDGER_MASTER_KEY: ${TOKENLEDGER_MASTER_KEY:?set TOKENLEDGER_MASTER_KEY in .env — openssl rand -base64 32}
   JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — openssl rand -base64 48}
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env to your public https:// domain}
   LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -36,12 +36,12 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: tokentrail
+      POSTGRES_USER: tokenledger
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: tokentrail
+      POSTGRES_DB: tokenledger
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tokentrail"]
+      test: ["CMD-SHELL", "pg_isready -U tokenledger"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -62,7 +62,7 @@ services:
   migrate:
     build: { context: ., dockerfile: apps/api/Dockerfile }
     command: ["sh", "-c",
-      "./node_modules/.bin/prisma migrate deploy --schema node_modules/@tokentrail/db/prisma/schema.prisma && ./node_modules/.bin/tsx node_modules/@tokentrail/db/src/seed/index.ts"]
+      "./node_modules/.bin/prisma migrate deploy --schema node_modules/@tokenledger/db/prisma/schema.prisma && ./node_modules/.bin/tsx node_modules/@tokenledger/db/src/seed/index.ts"]
     environment: *app-env
     depends_on:
       postgres: { condition: service_healthy }

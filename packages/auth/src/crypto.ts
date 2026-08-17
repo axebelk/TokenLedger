@@ -18,7 +18,7 @@ export interface MasterKeyRing {
 export function keyRingFromEnv(masterKeyBase64: string): MasterKeyRing {
   const key = Buffer.from(masterKeyBase64, "base64");
   if (key.length !== 32) {
-    throw new Error("TOKENTRAIL_MASTER_KEY must decode to exactly 32 bytes");
+    throw new Error("TOKENLEDGER_MASTER_KEY must decode to exactly 32 bytes");
   }
   return { keys: new Map([[0, key]]) };
 }

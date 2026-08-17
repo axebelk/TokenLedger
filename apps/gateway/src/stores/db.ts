@@ -1,6 +1,6 @@
 import pg from "pg";
-import type { Provider } from "@tokentrail/shared";
-import { decryptSecret, type MasterKeyRing } from "@tokentrail/auth";
+import type { Provider } from "@tokenledger/shared";
+import { decryptSecret, type MasterKeyRing } from "@tokenledger/auth";
 import type {
   CredentialStore,
   KeyStore,
@@ -108,7 +108,7 @@ export class PgCredentialStore implements CredentialStore {
     if (row.encryptedSecret) {
       if (!this.ring) {
         throw new Error(
-          "Encrypted credential present but TOKENTRAIL_MASTER_KEY is not configured",
+          "Encrypted credential present but TOKENLEDGER_MASTER_KEY is not configured",
         );
       }
       secret = decryptSecret(row.encryptedSecret, this.ring);

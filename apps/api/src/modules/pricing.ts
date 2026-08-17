@@ -1,7 +1,7 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { ConflictError, ForbiddenError, NotFoundError } from "@tokentrail/shared";
-import { Prisma, type Provider } from "@tokentrail/db";
+import { ConflictError, ForbiddenError, NotFoundError } from "@tokenledger/shared";
+import { Prisma, type Provider } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const PROVIDERS = ["ANTHROPIC", "OPENAI", "GEMINI", "MINIMAX", "OPENROUTER", "DEEPSEEK", "OLLAMA"] as const;
@@ -29,7 +29,7 @@ const overrideSchema = z.object({
 });
 
 interface PricingModuleOptions {
-  prisma: import("@tokentrail/db").PrismaClient;
+  prisma: import("@tokenledger/db").PrismaClient;
   authenticate: preHandlerHookHandler;
 }
 

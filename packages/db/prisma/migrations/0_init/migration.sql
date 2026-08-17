@@ -730,7 +730,7 @@ ALTER TABLE "slack_integration" ADD CONSTRAINT "slack_integration_workspaceId_fk
 ALTER TABLE "branding" ADD CONSTRAINT "branding_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 
--- ── TokenTrail companions (raw-SQL, per docs/05 §migration-companions) ──
+-- ── TokenLedger companions (raw-SQL, per docs/05 §migration-companions) ──
 
 -- Default all sessions of the app role to UTC so date_trunc / display are
 -- timezone-safe regardless of the host's local timezone.

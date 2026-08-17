@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { TOKEN_PREFIX } from "@tokentrail/shared";
+import { TOKEN_PREFIX } from "@tokenledger/shared";
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 

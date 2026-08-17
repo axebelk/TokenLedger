@@ -1,5 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
-import type { Logger } from "@tokentrail/telemetry";
+import type { Logger } from "@tokenledger/telemetry";
 
 export interface Mailer {
   send(to: string, subject: string, html: string, text: string): Promise<void>;
@@ -30,12 +30,12 @@ export function inviteEmail(opts: {
 }): { subject: string; html: string; text: string } {
   const { workspaceName, inviterName, acceptUrl } = opts;
   return {
-    subject: `${inviterName} invited you to ${workspaceName} on TokenTrail`,
-    text: `${inviterName} invited you to the "${workspaceName}" workspace on TokenTrail.\n\nAccept the invitation: ${acceptUrl}\n\nThis link expires in 7 days.`,
+    subject: `${inviterName} invited you to ${workspaceName} on TokenLedger`,
+    text: `${inviterName} invited you to the "${workspaceName}" workspace on TokenLedger.\n\nAccept the invitation: ${acceptUrl}\n\nThis link expires in 7 days.`,
     html: `
       <div style="font-family:sans-serif;max-width:480px">
         <h2>You're invited to ${escapeHtml(workspaceName)}</h2>
-        <p>${escapeHtml(inviterName)} invited you to their TokenTrail workspace.</p>
+        <p>${escapeHtml(inviterName)} invited you to their TokenLedger workspace.</p>
         <p><a href="${acceptUrl}" style="background:#3b5bdb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Accept invitation</a></p>
         <p style="color:#888;font-size:12px">This link expires in 7 days. If you weren't expecting this, ignore this email.</p>
       </div>`,

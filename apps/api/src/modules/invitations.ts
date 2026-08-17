@@ -3,9 +3,9 @@ import { z } from "zod";
 import {
   ConflictError, ForbiddenError, hasMinimumRole, NotFoundError, UnauthorizedError, ValidationError,
   type WorkspaceRole,
-} from "@tokentrail/shared";
-import { hashPassword, mintInviteToken, sha256Hex } from "@tokentrail/auth";
-import type { PrismaClient } from "@tokentrail/db";
+} from "@tokenledger/shared";
+import { hashPassword, mintInviteToken, sha256Hex } from "@tokenledger/auth";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 import { inviteEmail, type Mailer } from "../lib/mailer.js";
 

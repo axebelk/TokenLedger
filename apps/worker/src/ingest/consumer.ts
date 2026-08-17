@@ -1,11 +1,11 @@
-import type { Logger } from "@tokentrail/telemetry";
-import type { PrismaClient } from "@tokentrail/db";
+import type { Logger } from "@tokenledger/telemetry";
+import type { PrismaClient } from "@tokenledger/db";
 import {
   CONSUMER_GROUPS,
   STREAMS,
   type Redis,
   type UsageEventMessage,
-} from "@tokentrail/queue";
+} from "@tokenledger/queue";
 import { hostname } from "node:os";
 import { persistBatch } from "./persist.js";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@tokentrail/pricing",
+  "name": "@tokenledger/pricing",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tokentrail/shared": "workspace:*"
+    "@tokenledger/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

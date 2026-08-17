@@ -1,6 +1,6 @@
-# Deploying TokenTrail
+# Deploying TokenLedger
 
-This guide takes you from a fresh Linux server to a running, HTTPS TokenTrail
+This guide takes you from a fresh Linux server to a running, HTTPS TokenLedger
 instance using the Docker images published to the GitHub Container Registry
 (GHCR) by CI.
 
@@ -14,14 +14,14 @@ instance using the Docker images published to the GitHub Container Registry
 
 ## 0. Pick a path
 
-TokenTrail needs *something* terminating TLS on your domain and routing three
+TokenLedger needs *something* terminating TLS on your domain and routing three
 paths to three containers: `/` → console, `/api/*` → control-plane API,
 `/gw/*` → LLM gateway. There are two ways to get that, and the right one
 depends on whether `:80`/`:443` on this host are already spoken for.
 
 | | Path A — bundled Caddy | Path B — your existing reverse proxy |
 |---|---|---|
-| **When** | Fresh box, TokenTrail is the only thing on it | You already run nginx/Caddy/Traefik here for other sites (`:80`/`:443` are taken) |
+| **When** | Fresh box, TokenLedger is the only thing on it | You already run nginx/Caddy/Traefik here for other sites (`:80`/`:443` are taken) |
 | **HTTPS** | Automatic (Caddy + Let's Encrypt), zero config | You manage certs the way you already do (Certbot, etc.) |
 | **Compose command** | adds `--profile caddy` | layers `-f deploy/docker-compose.host-proxy.yml` |
 | **What you configure** | `DOMAIN` in `.env` | a vhost on your existing proxy (example provided) |
@@ -52,10 +52,10 @@ The `Publish Docker images` workflow builds four images and pushes them to GHCR:
 
 | Image | Contents | Port (internal) |
 |-------|----------|------|
-| `ghcr.io/<owner>/tokentrail-api` | Control-plane REST API | 4000 |
-| `ghcr.io/<owner>/tokentrail-gateway` | Data-plane LLM proxy | 4100 |
-| `ghcr.io/<owner>/tokentrail-worker` | Rollups, exports, housekeeping | — |
-| `ghcr.io/<owner>/tokentrail-web` | Console (static, via nginx) | 80 |
+| `ghcr.io/<owner>/tokenledger-api` | Control-plane REST API | 4000 |
+| `ghcr.io/<owner>/tokenledger-gateway` | Data-plane LLM proxy | 4100 |
+| `ghcr.io/<owner>/tokenledger-worker` | Rollups, exports, housekeeping | — |
+| `ghcr.io/<owner>/tokenledger-web` | Console (static, via nginx) | 80 |
 
 It triggers on:
 
@@ -93,7 +93,7 @@ After the run, make the packages pullable: on GitHub open each package
   ```
 - **Path A:** ports **80** and **443** free and open to the internet.
   **Path B:** your existing proxy already holds those — nothing new to open.
-- A **domain** (e.g. `tokentrail.example.com`) with an **A record** pointing at
+- A **domain** (e.g. `tokenledger.example.com`) with an **A record** pointing at
   the server's public IP.
 
 ---
@@ -103,8 +103,8 @@ After the run, make the packages pullable: on GitHub open each package
 You only need the `deploy/` folder plus `.env` — clone the repo or copy them:
 
 ```bash
-git clone https://github.com/<owner>/<repo>.git tokentrail
-cd tokentrail
+git clone https://github.com/<owner>/<repo>.git tokenledger
+cd tokenledger
 # the pieces we use: deploy/docker-compose.prod.yml,
 # deploy/docker-compose.host-proxy.yml (Path B), deploy/Caddyfile (Path A), .env
 ```
@@ -134,18 +134,18 @@ Fill in these **required** values:
 
 ```dotenv
 # Registry + version (lowercase owner) — see the "latest" warning in step 1
-IMAGE_PREFIX=ghcr.io/<owner>/tokentrail
+IMAGE_PREFIX=ghcr.io/<owner>/tokenledger
 TAG=main                          # or a pinned vX.Y.Z release
 
 # Public URL — MUST match your domain, used for invite links & CORS
-PUBLIC_BASE_URL=https://tokentrail.example.com
+PUBLIC_BASE_URL=https://tokenledger.example.com
 
 # Path A only — enables Caddy's automatic HTTPS. Leave blank for Path B.
-DOMAIN=tokentrail.example.com
+DOMAIN=tokenledger.example.com
 
 # Secrets — generate fresh, keep safe
 POSTGRES_PASSWORD=...             # openssl rand -base64 24
-TOKENTRAIL_MASTER_KEY=...         # openssl rand -base64 32  (encrypts provider keys)
+TOKENLEDGER_MASTER_KEY=...         # openssl rand -base64 32  (encrypts provider keys)
 JWT_SECRET=...                    # openssl rand -base64 48
 
 # Platform super-admins (comma-separated emails that see the Platform console)
@@ -161,15 +161,15 @@ LICENSE_KEY=                      # Enterprise only
 Generate all three secrets at once:
 
 ```bash
-printf 'POSTGRES_PASSWORD=%s\nTOKENTRAIL_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
+printf 'POSTGRES_PASSWORD=%s\nTOKENLEDGER_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
   "$(openssl rand -base64 24)" "$(openssl rand -base64 32)" "$(openssl rand -base64 48)"
 ```
 
-> ⚠️ **Keep `TOKENTRAIL_MASTER_KEY` safe.** It encrypts every stored provider
+> ⚠️ **Keep `TOKENLEDGER_MASTER_KEY` safe.** It encrypts every stored provider
 > credential — losing it orphans them and they must be re-entered.
 >
 > ⚠️ **Secrets pasted into a chat/ticket/AI assistant should be treated as
-> burned.** Rotate `POSTGRES_PASSWORD`, `TOKENTRAIL_MASTER_KEY`, and
+> burned.** Rotate `POSTGRES_PASSWORD`, `TOKENLEDGER_MASTER_KEY`, and
 > `JWT_SECRET` if you ever shared them outside this file.
 
 ---
@@ -230,7 +230,7 @@ set your `server_name` and cert paths, `nginx -t && systemctl reload nginx`.
 > ⚠️ **The one gotcha that will 404 every API call:** nginx's `proxy_pass`
 > rewrites the request path if its target has a trailing slash (or any path
 > component) while the `location` prefix doesn't exactly match the request.
-> TokenTrail's API only answers under `/api/v1/...` — if your proxy strips or
+> TokenLedger's API only answers under `/api/v1/...` — if your proxy strips or
 > mangles `/api` before forwarding, you'll see:
 > ```json
 > {"message":"Route POST://v1/auth/register not found","statusCode":404}
@@ -256,14 +256,14 @@ set your `server_name` and cert paths, `nginx -t && systemctl reload nginx`.
 
 ## 8. First login
 
-Visit **`https://tokentrail.example.com`** and **register the first account**
+Visit **`https://tokenledger.example.com`** and **register the first account**
 — there's no default login, registration creates your user *and* workspace in
 one step. Use an email listed in `SUPERADMIN_EMAILS` to also get the
 **Platform** console. Then add a provider credential and issue a virtual key
 from **Connect**.
 
 The gateway base URL your users point their SDKs at is
-`https://tokentrail.example.com/gw/<provider>/…`.
+`https://tokenledger.example.com/gw/<provider>/…`.
 
 ---
 
@@ -289,16 +289,16 @@ be scaled with `GATEWAY_REPLICAS=2` in `.env` for rolling capacity.
 
 ## 10. Backups
 
-The stateful data lives in two named volumes: **`tokentrail_pgdata`** (the
-database — your source of truth) and `tokentrail_redisdata` (in-flight metering
+The stateful data lives in two named volumes: **`tokenledger_pgdata`** (the
+database — your source of truth) and `tokenledger_redisdata` (in-flight metering
 stream). Back up Postgres regularly:
 
 ```bash
 docker compose -f deploy/docker-compose.prod.yml exec postgres \
-  pg_dump -U tokentrail tokentrail | gzip > tokentrail-$(date +%F).sql.gz
+  pg_dump -U tokenledger tokenledger | gzip > tokenledger-$(date +%F).sql.gz
 ```
 
-Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgres psql -U tokentrail tokentrail`.
+Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgres psql -U tokenledger tokenledger`.
 
 ---
 
@@ -308,7 +308,7 @@ Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgre
 |--------|--------------------|
 | `denied` / `manifest unknown` on `pull` | Packages are private — do step 4, or make them public. Check `IMAGE_PREFIX` is lowercase. |
 | `migrate` exits 127, `sh: .../prisma: not found` | Pulled an old image built before the `prisma` CLI fix. `pull` again, check `TAG` isn't silently defaulting to a stale `latest` (step 1), and compare the image's `CREATED` time: `docker compose ... images \| grep api`. |
-| `project name "tokentrail" already in use` | Another compose project on this host (e.g. someone else's) is already registered as `tokentrail`. Edit the very first line of the compose file (`name: tokentrail`) to `name: tokentrail-aitrack` (or similar). The internal service names (`api`, `gateway`, …) don't change, only the project prefix `docker compose -p <that-name> …` uses. |
+| `project name "tokenledger" already in use` | Another compose project on this host (e.g. someone else's) is already registered as `tokenledger`. Edit the very first line of the compose file (`name: tokenledger`) to `name: tokenledger-aitrack` (or similar). The internal service names (`api`, `gateway`, …) don't change, only the project prefix `docker compose -p <that-name> …` uses. |
 | `docker compose up` reuses the old container/image | `pull` doesn't happen automatically — run `pull` explicitly before every `up` when you expect new code. |
 | API returns `Route POST://v1/... not found` (double slash or missing `/api`) | Your reverse proxy is stripping/mangling the `/api` prefix — see the gotcha in step 7. Not applicable on Path A (Caddy's `Caddyfile` is already correct). |
 | Site loads but login/register calls fail with a **CORS** or network error | `PUBLIC_BASE_URL` in `.env` doesn't match the domain you're actually browsing to — fix and restart `api`. |
@@ -316,7 +316,7 @@ Restore into a fresh DB with `gunzip -c … | docker compose … exec -T postgre
 | `api` restarts, DB errors | `migrate` didn't finish — check `logs migrate`; verify `POSTGRES_PASSWORD` matches in `.env`. |
 | Invite emails never arrive | `SMTP_URL` unset — that's fine; use **Members → Copy invite link** instead. |
 | No **Platform** menu for admin | The signed-in email isn't in `SUPERADMIN_EMAILS`; update `.env` and `up -d --force-recreate api` to restart with it picked up. |
-| Provider credentials all invalid after a redeploy | `TOKENTRAIL_MASTER_KEY` changed — restore the original key. |
+| Provider credentials all invalid after a redeploy | `TOKENLEDGER_MASTER_KEY` changed — restore the original key. |
 | LLM responses arrive all at once instead of streaming | Your reverse proxy is buffering `/gw/*` — add `proxy_buffering off` (nginx) or the equivalent for your proxy. |
 | `413 Request Entity Too Large` on requests with images/PDFs/large context | Your proxy's body-size cap is below the gateway's 20 MiB limit — add `client_max_body_size 25m;` (nginx, see step 7). Not applicable on Path A (Caddy has no default limit). If it persists after that, confirm you're on an image tagged after the `bodyLimit` fix — older gateway builds silently capped at Fastify's 1 MiB default regardless of proxy config. |
 

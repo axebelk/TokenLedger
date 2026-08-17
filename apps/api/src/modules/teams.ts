@@ -1,7 +1,7 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { ConflictError, ForbiddenError, NotFoundError, hasMinimumRole } from "@tokentrail/shared";
-import type { PrismaClient } from "@tokentrail/db";
+import { ConflictError, ForbiddenError, NotFoundError, hasMinimumRole } from "@tokenledger/shared";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const createSchema = z.object({

@@ -1,4 +1,4 @@
-# TokenTrail — Database Schema (PostgreSQL 16)
+# TokenLedger — Database Schema (PostgreSQL 16)
 
 **Version:** 1.0 · Managed by Prisma migrations; partitioning & special indexes applied via raw-SQL migration steps.
 
@@ -77,7 +77,7 @@ Global:    ModelPrice (catalog) · License
 | `latency_ms`,`ttft_ms` | int | total / time-to-first-token |
 | `streamed` | bool | |
 | `kind` | enum | REQUEST/ADJUSTMENT |
-| `tags` | text[] | from `x-tokentrail-tags` |
+| `tags` | text[] | from `x-tokenledger-tags` |
 
 Indexes (per partition): `(workspace_id, occurred_at DESC)`, `(project_id, occurred_at DESC)`, `(user_id, occurred_at DESC)`, BRIN on `occurred_at`.
 

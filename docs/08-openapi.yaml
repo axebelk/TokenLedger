@@ -1,11 +1,11 @@
-# TokenTrail Control-Plane API — OpenAPI 3.1 (representative core; full spec generated
+# TokenLedger Control-Plane API — OpenAPI 3.1 (representative core; full spec generated
 # from zod route schemas via fastify-zod-openapi and served at /api/docs)
 openapi: 3.1.0
 info:
-  title: TokenTrail API
+  title: TokenLedger API
   version: 1.0.0
   description: >
-    Control-plane REST API for TokenTrail, the open-source AI cost governance and
+    Control-plane REST API for TokenLedger, the open-source AI cost governance and
     usage analytics platform. Gateway (data-plane) routes under /gw are documented
     separately per provider surface.
   license: { name: Apache-2.0, identifier: Apache-2.0 }

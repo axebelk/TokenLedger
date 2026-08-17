@@ -33,25 +33,25 @@ importers:
       '@fastify/helmet':
         specifier: ^13.0.0
         version: 13.1.0
-      '@tokentrail/auth':
+      '@tokenledger/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@tokentrail/config':
+      '@tokenledger/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@tokentrail/db':
+      '@tokenledger/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@tokentrail/providers':
+      '@tokenledger/providers':
         specifier: workspace:*
         version: link:../../packages/providers
-      '@tokentrail/queue':
+      '@tokenledger/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tokentrail/telemetry':
+      '@tokenledger/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       fastify:
@@ -88,28 +88,28 @@ importers:
 
   apps/gateway:
     dependencies:
-      '@tokentrail/auth':
+      '@tokenledger/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@tokentrail/config':
+      '@tokenledger/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@tokentrail/db':
+      '@tokenledger/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@tokentrail/pricing':
+      '@tokenledger/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
-      '@tokentrail/providers':
+      '@tokenledger/providers':
         specifier: workspace:*
         version: link:../../packages/providers
-      '@tokentrail/queue':
+      '@tokenledger/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tokentrail/telemetry':
+      '@tokenledger/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       fastify:
@@ -192,19 +192,19 @@ importers:
 
   apps/worker:
     dependencies:
-      '@tokentrail/config':
+      '@tokenledger/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@tokentrail/db':
+      '@tokenledger/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@tokentrail/queue':
+      '@tokenledger/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tokentrail/telemetry':
+      '@tokenledger/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       bullmq:
@@ -241,7 +241,7 @@ importers:
 
   packages/auth:
     dependencies:
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../shared
       jose:
@@ -298,7 +298,7 @@ importers:
 
   packages/pricing:
     dependencies:
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -311,7 +311,7 @@ importers:
 
   packages/providers:
     dependencies:
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -327,7 +327,7 @@ importers:
 
   packages/queue:
     dependencies:
-      '@tokentrail/shared':
+      '@tokenledger/shared':
         specifier: workspace:*
         version: link:../shared
       bullmq:

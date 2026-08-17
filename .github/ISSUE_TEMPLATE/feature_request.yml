@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose something TokenTrail should do.
+description: Propose something TokenLedger should do.
 labels: ["enhancement", "needs-triage"]
 body:
   - type: markdown

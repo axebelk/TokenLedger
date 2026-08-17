@@ -5,7 +5,7 @@ import type {
   ResolvedCredential,
   StreamUsageExtractor,
 } from "./types.js";
-import type { Provider } from "@tokentrail/shared";
+import type { Provider } from "@tokenledger/shared";
 
 export interface OpenAiUsage {
   prompt_tokens?: number;
@@ -33,7 +33,7 @@ export function normalizeOpenAiUsage(
   const cached = usage.prompt_tokens_details?.cached_tokens ?? 0;
   return {
     model,
-    // prompt_tokens includes cached tokens; TokenTrail prices them separately.
+    // prompt_tokens includes cached tokens; TokenLedger prices them separately.
     inputTokens: Math.max(0, (usage.prompt_tokens ?? 0) - cached),
     outputTokens: usage.completion_tokens ?? 0,
     cacheReadTokens: cached,

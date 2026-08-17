@@ -1,7 +1,7 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { hasMinimumRole } from "@tokentrail/shared";
-import type { PrismaClient, Prisma } from "@tokentrail/db";
+import { hasMinimumRole } from "@tokenledger/shared";
+import type { PrismaClient, Prisma } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 import {
   DIMENSIONS, GRANULARITIES, METRICS, queryBreakdown, queryTimeseries, type ExplorerFilters,

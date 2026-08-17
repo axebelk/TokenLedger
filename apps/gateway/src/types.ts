@@ -1,6 +1,6 @@
-import type { Provider } from "@tokentrail/shared";
-import type { UsageEventMessage } from "@tokentrail/queue";
-import type { PriceEntry } from "@tokentrail/pricing";
+import type { Provider } from "@tokenledger/shared";
+import type { UsageEventMessage } from "@tokenledger/queue";
+import type { PriceEntry } from "@tokenledger/pricing";
 
 /** Everything the hot path needs to know about a presented virtual key. */
 export interface ResolvedKeyContext {

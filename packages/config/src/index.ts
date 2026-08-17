@@ -21,9 +21,9 @@ export const redisEnv = z.object({
 });
 
 export const secretsEnv = z.object({
-  TOKENTRAIL_MASTER_KEY: z
+  TOKENLEDGER_MASTER_KEY: z
     .string()
-    .min(32, "TOKENTRAIL_MASTER_KEY must be a base64-encoded 32-byte key"),
+    .min(32, "TOKENLEDGER_MASTER_KEY must be a base64-encoded 32-byte key"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
 });
 

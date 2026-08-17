@@ -1,6 +1,6 @@
 name: Publish Docker images
 
-# Builds the four TokenTrail service images and pushes them to the GitHub
+# Builds the four TokenLedger service images and pushes them to the GitHub
 # Container Registry (GHCR). Runs on version tags (v1.2.3), on pushes to main
 # (tagged `edge`), and on manual dispatch.
 on:
@@ -40,7 +40,7 @@ jobs:
       # Lowercase owner — GHCR image paths must be lowercase.
       - name: Compute image name
         id: img
-        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/tokentrail-${{ matrix.app }}" >> "$GITHUB_OUTPUT"
+        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/tokenledger-${{ matrix.app }}" >> "$GITHUB_OUTPUT"
 
       - name: Docker metadata (tags + labels)
         id: meta

@@ -1,9 +1,9 @@
 import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import { Counter } from "prom-client";
-import { keyRingFromEnv } from "@tokentrail/auth";
-import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
-import { createRedis, pingRedis } from "@tokentrail/queue";
+import { keyRingFromEnv } from "@tokenledger/auth";
+import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
+import { createRedis, pingRedis } from "@tokenledger/queue";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
 import { MAX_REQUEST_BODY } from "./proxy/core.js";
@@ -24,13 +24,13 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   const redis = createRedis(config.REDIS_URL);
 
   const eventsDropped = new Counter({
-    name: "tokentrail_events_dropped_total",
+    name: "tokenledger_events_dropped_total",
     help: "Usage events dropped after the retry buffer overflowed",
     registers: [registry],
   });
 
   // ── Dependency wiring: PG-backed when configured, in-memory otherwise ────
-  const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
+  const ring = config.TOKENLEDGER_MASTER_KEY ? keyRingFromEnv(config.TOKENLEDGER_MASTER_KEY) : null;
   let deps: GatewayDeps;
   let pricingSource: PgPricingSource | undefined;
   const subscriber = createRedis(config.REDIS_URL); // pub/sub needs its own connection
@@ -78,7 +78,7 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   app.addContentTypeParser("*", (_request, payload, done) => done(null, payload));
 
   app.addHook("onSend", async (request, reply) => {
-    reply.header("x-tokentrail-request-id", request.id);
+    reply.header("x-tokenledger-request-id", request.id);
   });
 
   app.get("/healthz", async () => ({ status: "ok" }));

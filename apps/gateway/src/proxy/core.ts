@@ -1,10 +1,10 @@
 import { Readable, Transform } from "node:stream";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { uuidv7, type CostBasis, type Provider } from "@tokentrail/shared";
-import { calculateCostUsd } from "@tokentrail/pricing";
-import type { NormalizedUsage, ProviderAdapter } from "@tokentrail/providers";
-import type { UsageEventMessage } from "@tokentrail/queue";
-import type { Logger } from "@tokentrail/telemetry";
+import { uuidv7, TOKEN_PREFIX, LEGACY_TOKEN_PREFIX, type CostBasis, type Provider } from "@tokenledger/shared";
+import { calculateCostUsd } from "@tokenledger/pricing";
+import type { NormalizedUsage, ProviderAdapter } from "@tokenledger/providers";
+import type { UsageEventMessage } from "@tokenledger/queue";
+import type { Logger } from "@tokenledger/telemetry";
 import type { GatewayDeps, ResolvedKeyContext } from "../types.js";
 
 export const MAX_REQUEST_BODY = 20 * 1024 * 1024;
@@ -16,17 +16,25 @@ export const SKIP_HEADERS = new Set([
 ]);
 
 export function extractKey(request: FastifyRequest): string | null {
+  // Accept both the current `tl_live_…` prefix and the legacy `tt_live_…` from
+  // before the TokenLedger rename. Pre-rename key hashes are stored in the DB
+  // against their original raw token, so legacy keys still resolve here as long
+  // as the same raw string is presented (the hash is computed below).
   const auth = request.headers.authorization;
-  if (auth?.startsWith("Bearer tt_")) return auth.slice("Bearer ".length);
+  if (auth?.startsWith(`Bearer ${TOKEN_PREFIX.virtualKey}`)) return auth.slice("Bearer ".length);
+  if (auth?.startsWith(`Bearer ${LEGACY_TOKEN_PREFIX}`)) return auth.slice("Bearer ".length);
   const apiKey = request.headers["x-api-key"];
-  if (typeof apiKey === "string" && apiKey.startsWith("tt_")) return apiKey;
+  if (typeof apiKey === "string" &&
+      (apiKey.startsWith(TOKEN_PREFIX.virtualKey) || apiKey.startsWith(LEGACY_TOKEN_PREFIX))) {
+    return apiKey;
+  }
   return null;
 }
 
 export function forwardableHeaders(headers: NodeJS.Dict<string | string[]>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [name, value] of Object.entries(headers)) {
-    if (value !== undefined && !SKIP_HEADERS.has(name) && !name.startsWith("x-tokentrail-")) {
+    if (value !== undefined && !SKIP_HEADERS.has(name) && !name.startsWith("x-tokenledger-")) {
       out[name] = Array.isArray(value) ? value.join(", ") : value;
     }
   }
@@ -238,9 +246,9 @@ export async function authorizeKey(
 ): Promise<{ ctx: ResolvedKeyContext } | { error: { status: number; type: string; message: string } }> {
   const presented = extractKey(request);
   if (!presented) {
-    return { error: { status: 401, type: "invalid_key", message: "Provide a TokenTrail virtual key (tt_live_…)" } };
+    return { error: { status: 401, type: "invalid_key", message: "Provide a TokenLedger virtual key (tl_live_… or tt_live_… legacy)" } };
   }
-  const { sha256Hex } = await import("@tokentrail/auth");
+  const { sha256Hex } = await import("@tokenledger/auth");
   const ctx = await deps.keyStore.resolve(sha256Hex(presented));
   if (!ctx) return { error: { status: 401, type: "invalid_key", message: "Unknown virtual key" } };
   if (ctx.status === "REVOKED") {

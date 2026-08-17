@@ -1,5 +1,5 @@
-import { Prisma, type PrismaClient } from "@tokentrail/db";
-import type { UsageEventMessage } from "@tokentrail/queue";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
+import type { UsageEventMessage } from "@tokenledger/queue";
 import { groupRollups } from "./rollups.js";
 
 /**

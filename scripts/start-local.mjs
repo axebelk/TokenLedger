@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * TokenTrail — from-source launcher (no Docker required).
+ * TokenLedger — from-source launcher (no Docker required).
  *
  * Starts worker, API, gateway, and the built console against an existing
  * PostgreSQL and Redis. Runs migrations + pricing seed first. Console is
@@ -8,7 +8,7 @@
  *
  *   node scripts/start-local.mjs
  *
- * Requires .env with DATABASE_URL, REDIS_URL, JWT_SECRET, TOKENTRAIL_MASTER_KEY.
+ * Requires .env with DATABASE_URL, REDIS_URL, JWT_SECRET, TOKENLEDGER_MASTER_KEY.
  * Reads .env automatically. Ctrl-C stops everything.
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -28,7 +28,7 @@ for (const line of readFileSync(envPath, "utf8").split("\n")) {
   const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
   if (m && !line.trimStart().startsWith("#")) process.env[m[1]] ??= m[2];
 }
-const required = ["DATABASE_URL", "REDIS_URL", "JWT_SECRET", "TOKENTRAIL_MASTER_KEY"];
+const required = ["DATABASE_URL", "REDIS_URL", "JWT_SECRET", "TOKENLEDGER_MASTER_KEY"];
 const missing = required.filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`Missing required env: ${missing.join(", ")}`);
@@ -47,11 +47,11 @@ function run(args, opts = {}) {
 }
 
 console.log("→ Applying database migrations…");
-run(["--filter", "@tokentrail/db", "exec", "prisma", "migrate", "deploy"]);
+run(["--filter", "@tokenledger/db", "exec", "prisma", "migrate", "deploy"]);
 console.log("→ Seeding pricing catalog…");
-run(["--filter", "@tokentrail/db", "run", "seed"]);
+run(["--filter", "@tokenledger/db", "run", "seed"]);
 console.log("→ Building console…");
-run(["--filter", "@tokentrail/web", "build"]);
+run(["--filter", "@tokenledger/web", "build"]);
 
 // ── Launch services ──────────────────────────────────────────────────────────
 const children = [];
@@ -69,7 +69,7 @@ start("api", "apps/api", ["exec", "tsx", "src/main.ts"]);
 start("gateway", "apps/gateway", ["exec", "tsx", "src/main.ts"]);
 start("console", "apps/web", ["exec", "vite", "preview", "--port", PORT, "--host"]);
 
-console.log(`\n🚀 TokenTrail is up:\n   Console : http://localhost:${PORT}\n   Gateway : http://localhost:${PORT}/gw/{provider}/…\n   Press Ctrl-C to stop.\n`);
+console.log(`\n🚀 TokenLedger is up:\n   Console : http://localhost:${PORT}\n   Gateway : http://localhost:${PORT}/gw/{provider}/…\n   Press Ctrl-C to stop.\n`);
 
 let stopping = false;
 function stop(code = 0) {

@@ -1,11 +1,11 @@
-# TokenTrail gateway (data plane)
+# TokenLedger gateway (data plane)
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm db:generate
-RUN pnpm deploy --filter @tokentrail/gateway --prod --legacy /out
+RUN pnpm deploy --filter @tokenledger/gateway --prod --legacy /out
 
 FROM node:22-alpine
 ENV NODE_ENV=production

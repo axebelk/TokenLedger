@@ -6,7 +6,7 @@ export interface AccessClaims {
 }
 
 const encoder = new TextEncoder();
-const ISSUER = "tokentrail";
+const ISSUER = "tokenledger";
 
 export const ACCESS_TOKEN_TTL_S = 15 * 60;
 export const REFRESH_TOKEN_TTL_S = 30 * 24 * 60 * 60;

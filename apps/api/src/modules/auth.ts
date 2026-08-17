@@ -9,9 +9,9 @@ import {
   sha256Hex,
   signAccessToken,
   verifyPassword,
-} from "@tokentrail/auth";
-import { ConflictError, UnauthorizedError } from "@tokentrail/shared";
-import type { PrismaClient } from "@tokentrail/db";
+} from "@tokenledger/auth";
+import { ConflictError, UnauthorizedError } from "@tokenledger/shared";
+import type { PrismaClient } from "@tokenledger/db";
 import type { preHandlerHookHandler } from "fastify";
 
 const REFRESH_COOKIE = "tt_refresh";

@@ -1,7 +1,7 @@
 import { Readable, pipeline as streamPipeline } from "node:stream";
 import { request as undiciRequest } from "undici";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { PROVIDERS, type Provider } from "@tokentrail/shared";
+import { PROVIDERS, type Provider } from "@tokenledger/shared";
 import {
   getAdapter,
   anthropicToOpenaiResponse,
@@ -10,8 +10,8 @@ import {
   openaiToAnthropicRequest,
   openaiToGeminiRequest,
   type NormalizedUsage,
-} from "@tokentrail/providers";
-import type { Logger } from "@tokentrail/telemetry";
+} from "@tokenledger/providers";
+import type { Logger } from "@tokenledger/telemetry";
 import type { GatewayDeps } from "../types.js";
 import {
   EventFinalizer, FrameTap, MAX_REQUEST_BODY,
@@ -152,7 +152,7 @@ export function makeUnifiedHandler(deps: GatewayDeps, logger: Logger) {
           ...upstream.headers,
           "content-type": "application/json",
           "accept-encoding": "identity",
-          "user-agent": "tokentrail-gateway/0.1",
+          "user-agent": "tokenledger-gateway/0.1",
         },
         body: JSON.stringify(upstreamBody),
         headersTimeout: 60_000,

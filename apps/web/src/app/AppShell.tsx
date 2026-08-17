@@ -21,7 +21,7 @@ export function AppShell() {
       <Sider theme="light" width={224} className="tt-sider">
         <div className="tt-brand">
           <span className="tt-brand__mark" />
-          <span className="tt-brand__word">TokenTrail</span>
+          <span className="tt-brand__word">TokenLedger</span>
         </div>
         <Menu
           theme="light"

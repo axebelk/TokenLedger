@@ -19,4 +19,4 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
 await app.listen({ port: config.GATEWAY_PORT, host: "0.0.0.0" });
-app.log.info(`TokenTrail Gateway listening on :${config.GATEWAY_PORT}`);
+app.log.info(`TokenLedger Gateway listening on :${config.GATEWAY_PORT}`);

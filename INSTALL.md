@@ -1,4 +1,4 @@
-# Installing TokenTrail
+# Installing TokenLedger
 
 This is a focused, zero-to-running guide. For the operating-manual-style
 reference (secrets management, upgrades, backups, scaling), see **[DEPLOY.md](DEPLOY.md)**.
@@ -13,7 +13,7 @@ reference (secrets management, upgrades, backups, scaling), see **[DEPLOY.md](DE
 | "I already have nginx/Caddy/Traefik on this host" | **[Docker — Path B](#path-b--docker-with-an-existing-reverse-proxy)** | ~10 min |
 | "I'll build from source — no Docker dependency" | **[From source (pnpm + Node)](#from-source-pnpm--node-22)** | ~10 min |
 
-All three converge on the same outcome: a running TokenTrail instance whose
+All three converge on the same outcome: a running TokenLedger instance whose
 gateway URL (`/gw/{provider}/...`) you point your AI SDKs at.
 
 ---
@@ -32,15 +32,15 @@ Pick the method, then make sure the rest is ready:
 ## Path A — Docker with automatic HTTPS
 
 ```bash
-git clone https://github.com/<owner>/TokenTrail.git   # or your fork
-cd TokenTrail
+git clone https://github.com/<owner>/TokenLedger.git   # or your fork
+cd TokenLedger
 cp .env.example .env
 ```
 
 Generate the three required secrets:
 
 ```bash
-printf 'POSTGRES_PASSWORD=%s\nTOKENTRAIL_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
+printf 'POSTGRES_PASSWORD=%s\nTOKENLEDGER_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
   "$(openssl rand -base64 24)" "$(openssl rand -base64 32)" "$(openssl rand -base64 48)" \
   >> .env
 ```
@@ -48,8 +48,8 @@ printf 'POSTGRES_PASSWORD=%s\nTOKENTRAIL_MASTER_KEY=%s\nJWT_SECRET=%s\n' \
 Set these two in `.env`:
 
 ```dotenv
-DOMAIN=tokentrail.example.com
-PUBLIC_BASE_URL=https://tokentrail.example.com
+DOMAIN=tokenledger.example.com
+PUBLIC_BASE_URL=https://tokenledger.example.com
 ```
 
 Then launch:
@@ -62,11 +62,11 @@ docker compose --profile caddy logs api gateway   # tail for errors
 
 Caddy will fetch a Let's Encrypt certificate automatically on first request.
 
-Open **https://tokentrail.example.com**, register the first account (use an
+Open **https://tokenledger.example.com**, register the first account (use an
 email matching `SUPERADMIN_EMAILS` to get the Platform console), and add a
 provider credential from **Providers → Add credential**.
 
-Your gateway base URL: **`https://tokentrail.example.com/gw/{provider}/...`**
+Your gateway base URL: **`https://tokenledger.example.com/gw/{provider}/...`**
 
 ---
 
@@ -76,8 +76,8 @@ Use this when this host already runs nginx (or Caddy/Traefik) fronting other
 sites, so `:80`/`:443` are taken.
 
 ```bash
-git clone https://github.com/<owner>/TokenTrail.git
-cd TokenTrail
+git clone https://github.com/<owner>/TokenLedger.git
+cd TokenLedger
 cp .env.example .env
 ```
 
@@ -118,8 +118,8 @@ Use this when you'd rather not depend on Docker at all — useful for
 development and for hosts where Docker isn't available.
 
 ```bash
-git clone https://github.com/<owner>/TokenTrail.git
-cd TokenTrail
+git clone https://github.com/<owner>/TokenLedger.git
+cd TokenLedger
 pnpm install        # also runs pnpm db:generate and prisma client
 ```
 
@@ -134,7 +134,7 @@ Copy and edit `.env`:
 
 ```bash
 cp .env.example .env
-# Required: DATABASE_URL, REDIS_URL, JWT_SECRET, TOKENTRAIL_MASTER_KEY
+# Required: DATABASE_URL, REDIS_URL, JWT_SECRET, TOKENLEDGER_MASTER_KEY
 # Set PUBLIC_BASE_URL to the URL you'll reach the console at.
 ```
 

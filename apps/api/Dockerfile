@@ -1,11 +1,11 @@
-# TokenTrail control-plane API
+# TokenLedger control-plane API
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm db:generate
-RUN pnpm deploy --filter @tokentrail/api --prod --legacy /out
+RUN pnpm deploy --filter @tokenledger/api --prod --legacy /out
 
 FROM node:22-alpine
 ENV NODE_ENV=production

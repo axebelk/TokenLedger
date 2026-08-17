@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { UsageEventMessage } from "@tokentrail/queue";
+import type { UsageEventMessage } from "@tokenledger/queue";
 import { formatScaled, groupRollups, parseDecimalScaled, truncateUtc } from "./rollups.js";
 
 function event(overrides: Partial<UsageEventMessage>): UsageEventMessage {

@@ -9,7 +9,7 @@ export { openrouterAdapter } from "./openrouter.js";
 export { minimaxAdapter } from "./minimax.js";
 export { createOpenAiCompatibleAdapter } from "./openai-compatible.js";
 
-import type { Provider } from "@tokentrail/shared";
+import type { Provider } from "@tokenledger/shared";
 import type { ProviderAdapter } from "./types.js";
 import { anthropicAdapter } from "./anthropic.js";
 import { openaiAdapter } from "./openai.js";

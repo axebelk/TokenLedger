@@ -1,4 +1,4 @@
-# TokenTrail — REST API Design
+# TokenLedger — REST API Design
 
 **Base URL (control plane):** `https://<host>/api/v1` · **Gateway:** `https://<host>/gw`
 

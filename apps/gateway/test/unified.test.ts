@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { mintVirtualKey } from "@tokentrail/auth";
+import { mintVirtualKey } from "@tokenledger/auth";
 import { buildServer, type GatewayServer } from "../src/server.js";
 import type { GatewayConfig } from "../src/config.js";
 import { CollectingSink, InMemoryCredentialStore, InMemoryKeyStore } from "../src/stores/memory.js";

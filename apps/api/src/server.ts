@@ -4,11 +4,11 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
-import { DomainError } from "@tokentrail/shared";
-import { keyRingFromEnv } from "@tokentrail/auth";
-import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
-import { createPrismaClient } from "@tokentrail/db";
-import { createQueue, createRedis, pingRedis, QUEUES } from "@tokentrail/queue";
+import { DomainError } from "@tokenledger/shared";
+import { keyRingFromEnv } from "@tokenledger/auth";
+import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
+import { createPrismaClient } from "@tokenledger/db";
+import { createQueue, createRedis, pingRedis, QUEUES } from "@tokenledger/queue";
 import type { ApiConfig } from "./config.js";
 import { makeAuthenticate, makeSuperAdminGuard, parseSuperAdmins } from "./plugins/guards.js";
 import { registerAuthModule } from "./modules/auth.js";
@@ -31,7 +31,7 @@ export async function buildServer(config: ApiConfig) {
   const prisma = createPrismaClient(config.DATABASE_URL);
   const redis = createRedis(config.REDIS_URL);
   const exportQueue = createQueue(QUEUES.exportCsv, redis);
-  const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
+  const ring = config.TOKENLEDGER_MASTER_KEY ? keyRingFromEnv(config.TOKENLEDGER_MASTER_KEY) : null;
 
   const app = Fastify({
     loggerInstance: logger,
@@ -47,7 +47,7 @@ export async function buildServer(config: ApiConfig) {
   app.setErrorHandler((error: FastifyError | ZodError | DomainError, request, reply) => {
     if (error instanceof ZodError) {
       return reply.status(400).type("application/problem+json").send({
-        type: "https://tokentrail.dev/problems/validation_failed",
+        type: "https://tokenledger.dev/problems/validation_failed",
         title: "validation_failed",
         status: 400,
         detail: "Request validation failed",
@@ -60,7 +60,7 @@ export async function buildServer(config: ApiConfig) {
         .status(error.httpStatus)
         .type("application/problem+json")
         .send({
-          type: `https://tokentrail.dev/problems/${error.code}`,
+          type: `https://tokenledger.dev/problems/${error.code}`,
           title: error.code,
           status: error.httpStatus,
           detail: error.message,
@@ -107,7 +107,7 @@ export async function buildServer(config: ApiConfig) {
   await app.register(
     async (api) => {
       api.get("/meta/version", async () => ({
-        name: "tokentrail",
+        name: "tokenledger",
         version: process.env.npm_package_version ?? "0.1.0",
         edition: "community",
       }));
@@ -128,7 +128,7 @@ export async function buildServer(config: ApiConfig) {
       registerInvitationsModule(api, {
         prisma,
         authenticate,
-        mailer: createMailer(config.SMTP_URL, logger, "TokenTrail <noreply@tokentrail.local>"),
+        mailer: createMailer(config.SMTP_URL, logger, "TokenLedger <noreply@tokenledger.local>"),
         publicBaseUrl: config.PUBLIC_BASE_URL,
       });
       registerPricingModule(api, { prisma, authenticate });

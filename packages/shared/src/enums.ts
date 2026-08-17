@@ -44,7 +44,14 @@ export type Enforcement = (typeof ENFORCEMENTS)[number];
 
 /** Token prefixes — three token classes, three prefixes, zero overlap. */
 export const TOKEN_PREFIX = {
-  virtualKey: "tt_live_",
-  personalAccessToken: "ttp_",
-  invite: "tti_",
+  // New canonical prefix minted from now on. The legacy prefix below is still
+  // accepted on the wire so existing keys keep resolving during the transition
+  // window — see `LEGACY_TOKEN_PREFIX` and apps/gateway/src/proxy/core.ts.
+  virtualKey: "tl_live_",
+  personalAccessToken: "tlp_",
+  invite: "tli_",
 } as const;
+
+/** Legacy virtual-key prefix from before the TokenLedger rename. Accepted by
+ * the gateway during the transition; no longer minted. Drop after one release. */
+export const LEGACY_TOKEN_PREFIX = "tt_live_";

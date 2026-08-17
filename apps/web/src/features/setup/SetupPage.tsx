@@ -7,7 +7,7 @@ import { CopyField } from "../../components/CopyField.js";
 const KEY = "tt_live_YOUR_KEY";
 
 /** Connect-your-agent guide: shows the gateway base URL + SDK snippets so a
- *  developer can route any AI SDK through TokenTrail. */
+ *  developer can route any AI SDK through TokenLedger. */
 export function SetupPage() {
   const { ws = "" } = useParams();
   const origin = window.location.origin;
@@ -81,7 +81,7 @@ export function SetupPage() {
           <ApiOutlined /> Connect your agent
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ maxWidth: 720 }}>
-          Point any AI SDK at TokenTrail instead of the provider. Change a base URL and use a{" "}
+          Point any AI SDK at TokenLedger instead of the provider. Change a base URL and use a{" "}
           virtual key — every request is then attributed, priced, and shown in your dashboard.
           Your real provider keys never leave the server.
         </Typography.Paragraph>

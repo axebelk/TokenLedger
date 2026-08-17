@@ -1,8 +1,8 @@
 {
-  "name": "tokentrail",
+  "name": "tokenledger",
   "private": true,
   "version": "0.1.0",
-  "description": "TokenTrail — open-source AI cost governance and usage analytics platform",
+  "description": "TokenLedger — open-source AI cost governance and usage analytics platform",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.12.0",

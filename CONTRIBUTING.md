@@ -1,4 +1,4 @@
-# Contributing to TokenTrail
+# Contributing to TokenLedger
 
 Thanks for helping build the open-source AI governance platform!
 
@@ -22,4 +22,4 @@ New provider = one pure module in `packages/providers` implementing `ProviderAda
 
 ## Licensing of contributions
 
-Contributions outside `ee/` are accepted under Apache-2.0. Contributions to `ee/` require agreeing to the TokenTrail Enterprise contributor terms (see `ee/LICENSE`).
+Contributions outside `ee/` are accepted under Apache-2.0. Contributions to `ee/` require agreeing to the TokenLedger Enterprise contributor terms (see `ee/LICENSE`).

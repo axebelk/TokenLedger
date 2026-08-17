@@ -38,7 +38,7 @@ export function PlatformReports() {
     const header = ["Workspace", "Slug", "Members", "Projects", "Requests30d", "SpendUSD30d"];
     const body = tenants.map((w) => [w.name, w.slug, w.members, w.projects, w.requests30d, Number(w.costUsd30d).toFixed(6)]);
     const stamp = dayjs().format("YYYY-MM-DD_HHmm");
-    downloadCsv([header, ...body], `tokentrail-tenants_${stamp}.csv`);
+    downloadCsv([header, ...body], `tokenledger-tenants_${stamp}.csv`);
   };
 
   return (

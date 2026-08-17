@@ -112,7 +112,7 @@ export function AnalyticsPage() {
       const lines = sorted.map((r) => [r.date, csv(r.dim), r.requests, r.tokens, r.cost.toFixed(6), r.errors].join(","));
       downloadCsv(
         [header.join(","), ...lines].join("\n"),
-        `tokentrail-${ws}-by-${groupBy}-daily-${dayjs().format("YYYY-MM-DD_HHmmss")}.csv`,
+        `tokenledger-${ws}-by-${groupBy}-daily-${dayjs().format("YYYY-MM-DD_HHmmss")}.csv`,
       );
     } finally {
       setExporting(false);

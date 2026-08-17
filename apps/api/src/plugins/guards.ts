@@ -5,9 +5,9 @@ import {
   UnauthorizedError,
   hasMinimumRole,
   type WorkspaceRole,
-} from "@tokentrail/shared";
-import { verifyAccessToken } from "@tokentrail/auth";
-import type { PrismaClient } from "@tokentrail/db";
+} from "@tokenledger/shared";
+import { verifyAccessToken } from "@tokenledger/auth";
+import type { PrismaClient } from "@tokenledger/db";
 
 export interface AuthedUser {
   id: string;

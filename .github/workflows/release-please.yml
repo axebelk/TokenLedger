@@ -53,9 +53,9 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           for app in api gateway worker web; do
             docker buildx imagetools create \
-              --tag "ghcr.io/${OWNER}/tokentrail-${app}:latest" \
-              --tag "ghcr.io/${OWNER}/tokentrail-${app}:${VER#v}" \
-              "ghcr.io/${OWNER}/tokentrail-${app}:${VER}"
+              --tag "ghcr.io/${OWNER}/tokenledger-${app}:latest" \
+              --tag "ghcr.io/${OWNER}/tokenledger-${app}:${VER#v}" \
+              "ghcr.io/${OWNER}/tokenledger-${app}:${VER}"
           done
         env:
           DOCKER_BUILDX_TOKEN: ${{ github.token }}

@@ -2,7 +2,7 @@ import { Redis } from "ioredis";
 import { Queue, Worker, type Job, type Processor } from "bullmq";
 
 export { Redis, Worker, Queue, type Job };
-import type { CostBasis, EventStatus, Provider } from "@tokentrail/shared";
+import type { CostBasis, EventStatus, Provider } from "@tokenledger/shared";
 
 /** Single registry of stream/queue/channel names — no magic strings elsewhere. */
 export const STREAMS = {

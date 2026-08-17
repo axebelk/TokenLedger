@@ -1,4 +1,4 @@
-# TokenTrail — Development Roadmap
+# TokenLedger — Development Roadmap
 
 **Team assumption:** 3–4 engineers (1 platform/backend-heavy, 1 backend, 1 frontend, 1 full-stack/DevX). Phases are sequential milestones; each ends in a tagged, demoable release.
 
@@ -16,7 +16,7 @@
 **Exit:** `pnpm dev` boots all services green; CI publishes images from `main`.
 
 ## Phase 1 — Gateway MVP: the sensor (Weeks 3–6)
-**Goal:** requests flow through TokenTrail and become priced usage events. *Anthropic + OpenAI + Ollama first* (covers the three auth/usage archetypes).
+**Goal:** requests flow through TokenLedger and become priced usage events. *Anthropic + OpenAI + Ollama first* (covers the three auth/usage archetypes).
 
 - Auth: register/login/JWT/refresh; workspace bootstrap; invitations (email via mailpit).
 - Credentials vault (AES-GCM), test-connection; virtual keys (issue/reveal-once/revoke + pub/sub invalidation).

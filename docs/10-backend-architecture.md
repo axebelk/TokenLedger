@@ -1,4 +1,4 @@
-# TokenTrail — Backend Architecture
+# TokenLedger — Backend Architecture
 
 **Stack:** Node 22 LTS · TypeScript strict · Fastify 5 · Prisma 6 · PostgreSQL 16 · Redis 7 · BullMQ 5 · undici · zod · pino
 
@@ -58,7 +58,7 @@ Design constraints: no Prisma on the hot path (raw `pg` pool for cache-miss look
 
 - **Client abort mid-stream:** upstream socket destroyed; usage extracted from frames seen so far, `costBasis=ESTIMATED` if the terminal usage frame never arrived.
 - **Unified endpoint:** `translateFromOpenAI` builds provider-native body; response translated back (non-stream: JSON map; stream: frame-by-frame SSE re-encoder). Passthrough routes skip translation entirely.
-- **Fail-open machinery:** Redis ops wrapped with 50 ms timeout + circuit breaker; on open circuit, auth falls back to PG + in-proc cache, events go to a bounded in-memory ring (flushed when Redis recovers; overflow counted in `tokentrail_events_dropped_total`).
+- **Fail-open machinery:** Redis ops wrapped with 50 ms timeout + circuit breaker; on open circuit, auth falls back to PG + in-proc cache, events go to a bounded in-memory ring (flushed when Redis recovers; overflow counted in `tokenledger_events_dropped_total`).
 
 ## 4. Worker (`apps/worker`)
 
@@ -114,7 +114,7 @@ Granularity picker: `hour` → hourly table (range ≤ 14 d), else daily table w
 - **Rate limiting (control plane):** `@fastify/rate-limit` on auth endpoints (brute-force guard).
 - **Clock:** all business logic takes `now: Date` injected — deterministic tests for periods/rollovers.
 - **Error taxonomy (`packages/shared/errors`):** `DomainError(code, httpStatus)` subclasses (`NotFound`, `Forbidden`, `LicenseRequired`, `BudgetExceeded`, `ValidationFailed`) — single onError mapper per app.
-- **Config surface (excerpt):** `DATABASE_URL`, `REDIS_URL`, `TOKENTRAIL_MASTER_KEY` (32 B base64), `JWT_SECRET`, `PUBLIC_BASE_URL`, `SMTP_URL`, `GATEWAY_FAILURE_POLICY`, `EVENT_RETENTION_DAYS`, `LICENSE_KEY?`.
+- **Config surface (excerpt):** `DATABASE_URL`, `REDIS_URL`, `TOKENLEDGER_MASTER_KEY` (32 B base64), `JWT_SECRET`, `PUBLIC_BASE_URL`, `SMTP_URL`, `GATEWAY_FAILURE_POLICY`, `EVENT_RETENTION_DAYS`, `LICENSE_KEY?`.
 
 ## 7. Security Posture
 

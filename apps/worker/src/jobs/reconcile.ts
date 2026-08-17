@@ -1,5 +1,5 @@
-import type { PrismaClient } from "@tokentrail/db";
-import type { Logger } from "@tokentrail/telemetry";
+import type { PrismaClient } from "@tokenledger/db";
+import type { Logger } from "@tokenledger/telemetry";
 
 interface DayAgg {
   d: string; // 'YYYY-MM-DD' in UTC
