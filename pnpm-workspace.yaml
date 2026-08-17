@@ -6,6 +6,11 @@ packages:
 # which splits the Redis type and breaks Queue connection typing).
 overrides:
   ioredis: ^5.11.1
+  # Security overrides for transitive deps (GitHub Dependabot alerts).
+  fast-uri: ">=4.1.2"
+  find-my-way: ">=9.8.0"
+  nanoid: ">=3.3.16"
+  postcss: ">=8.5.23"
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true

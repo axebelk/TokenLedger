@@ -22,15 +22,15 @@
     "@tokentrail/shared": "workspace:*",
     "@tokentrail/telemetry": "workspace:*",
     "fastify": "^5.2.0",
-    "nodemailer": "^6.9.0",
+    "nodemailer": "^9.0.5",
     "prisma": "^6.5.0",
     "tsx": "^4.19.0",
-    "undici": "^7.3.0",
+    "undici": "^7.29.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "@types/nodemailer": "^6.4.0",
+    "@types/nodemailer": "^7.0.4",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   }
