@@ -2,6 +2,7 @@ import Fastify, { type FastifyError } from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 import { DomainError } from "@tokenledger/shared";
@@ -42,6 +43,23 @@ export async function buildServer(config: ApiConfig) {
   await app.register(helmet);
   await app.register(cors, { origin: config.PUBLIC_BASE_URL, credentials: true });
   await app.register(cookie);
+  // Per-IP rate limit on the public surface. Modules opt-in per-route with
+  // tighter limits (e.g. /auth/login, /workspaces/:ws/exports/:id/download).
+  // No `redis:` passed → plugin uses its default LocalStore. A future
+  // enhancement can share counters across API replicas.
+  await app.register(rateLimit, {
+    global: false,
+    nameSpace: "tl-api-ip:",
+    max: 300, // 5 req/s burst headroom for legitimate API clients
+    timeWindow: "1 minute",
+    errorResponseBuilder: (_req, context) => ({
+      type: "https://tokenledger.dev/problems/rate_limited",
+      title: "rate_limited",
+      status: 429,
+      detail: `Too many requests; retry in ${context.after}.`,
+      retryAfterSeconds: Math.ceil(context.ttl / 1000),
+    }),
+  });
 
   // RFC 9457 problem+json for everything that escapes a handler.
   app.setErrorHandler((error: FastifyError | ZodError | DomainError, request, reply) => {

@@ -91,24 +91,31 @@ export function registerExportsModule(app: FastifyInstance, opts: ExportsModuleO
     return serialize(job);
   });
 
-  app.get("/workspaces/:ws/exports/:id/download", { preHandler: member }, async (request, reply) => {
-    const job = await findJob(prisma, request);
-    if (job.status !== "DONE" || !job.filePath) {
-      throw new NotFoundError("Export file (job not finished)");
-    }
-    if (job.expiresAt && job.expiresAt.getTime() < Date.now()) {
-      throw new NotFoundError("Export file (expired)");
-    }
-    try {
-      await stat(job.filePath);
-    } catch {
-      throw new NotFoundError("Export file");
-    }
-    reply
-      .header("content-type", "text/csv; charset=utf-8")
-      .header("content-disposition", `attachment; filename="tokenledger-export-${job.id}.csv"`);
-    return reply.send(createReadStream(job.filePath));
-  });
+  app.get(
+    "/workspaces/:ws/exports/:id/download",
+    {
+      preHandler: member,
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+    },
+    async (request, reply) => {
+      const job = await findJob(prisma, request);
+      if (job.status !== "DONE" || !job.filePath) {
+        throw new NotFoundError("Export file (job not finished)");
+      }
+      if (job.expiresAt && job.expiresAt.getTime() < Date.now()) {
+        throw new NotFoundError("Export file (expired)");
+      }
+      try {
+        await stat(job.filePath);
+      } catch {
+        throw new NotFoundError("Export file");
+      }
+      reply
+        .header("content-type", "text/csv; charset=utf-8")
+        .header("content-disposition", `attachment; filename="tokenledger-export-${job.id}.csv"`);
+      return reply.send(createReadStream(job.filePath));
+    },
+  );
 }
 
 async function findJob(

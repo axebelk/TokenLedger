@@ -28,7 +28,10 @@ function startShapeMock(): Promise<{ url: string; requests: Captured[]; close():
       const stream = sent.stream === true;
       // Real providers echo the requested model — mirror that so metering and
       // pricing behave as they would in production.
-      const pathModel = /\/models\/([^:]+):/.exec(path)?.[1];
+      // Cap `[^:]+` to a finite length so a pathological path like
+      // `/models//models//...` can't drag the engine into quadratic
+      // backtracking. Model names are far below this bound in practice.
+      const pathModel = /\/models\/([^:]{1,256}):/.exec(path)?.[1];
       const model = sent.model ?? pathModel ?? "unknown";
 
       if (path.includes("/v1/messages")) {

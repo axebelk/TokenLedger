@@ -13,10 +13,9 @@ name: Release Please
 #
 # Full reference: https://github.com/googleapis/release-please
 #
-# Secrets: needs `contents: write` (for the PR), `pull-requests: write`
-# (for the issue), and `id-token: write` (for the OIDC publish job, even
-# though we don't publish from here yet — kept for parity with the docker
-# workflow).
+# Secrets: needs `contents: write` (for the release PR) and
+# `pull-requests: write` (for the release issue). No `id-token` here —
+# release-please doesn't publish signed artifacts.
 
 on:
   push:
@@ -25,13 +24,12 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@8b8fd2cc23b2e18957157a9d923d75aa0c6f6ad5 # v4
         id: release
         with:
           config-file: .release-please-config.json

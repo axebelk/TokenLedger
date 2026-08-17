@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import { Counter } from "prom-client";
+import rateLimit from "@fastify/rate-limit";
 import { keyRingFromEnv } from "@tokenledger/auth";
 import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
 import { createRedis, pingRedis } from "@tokenledger/queue";
@@ -77,6 +78,29 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   app.removeAllContentTypeParsers();
   app.addContentTypeParser("*", (_request, payload, done) => done(null, payload));
 
+  // Per-IP rate limit protects the data plane from anonymous DoS — the
+  // per-virtual-key limiter (deps.rateLimiter) only fires AFTER key
+  // resolution, which means unauthenticated traffic could otherwise pin a
+  // worker on key validation + DB lookups.
+  //
+  // No `redis:` passed → plugin uses its default LocalStore (per-process).
+  // A future enhancement can pass `redis` here to share counters across
+  // gateway replicas; today this still blocks single-replica DoS and the
+  // per-VK limiter provides the cost-protection invariant.
+  await app.register(rateLimit, {
+    global: false, // apply per-route — /healthz, /readyz, /metrics stay open
+    nameSpace: "tl-gw-ip:",
+    max: 600, // 10 req/s burst headroom — well above legitimate traffic
+    timeWindow: "1 minute",
+    errorResponseBuilder: (_req, context) => ({
+      type: "https://tokenledger.dev/problems/rate_limited",
+      title: "rate_limited",
+      status: 429,
+      detail: `Too many requests; retry in ${context.after}.`,
+      retryAfterSeconds: Math.ceil(context.ttl / 1000),
+    }),
+  });
+
   app.addHook("onSend", async (request, reply) => {
     reply.header("x-tokenledger-request-id", request.id);
   });
@@ -100,12 +124,19 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
 
   // Unified OpenAI-compatible surface (model prefix routing + translation).
   // Registered before the native catch-all so /gw/v1/... isn't captured by it.
-  app.post("/gw/v1/chat/completions", makeUnifiedHandler(deps, logger));
+  app.post(
+    "/gw/v1/chat/completions",
+    { config: { rateLimit: { max: 600, timeWindow: "1 minute" } } },
+    makeUnifiedHandler(deps, logger),
+  );
 
   // OpenAI-compatible model listing. Returns every (provider, pattern) pair in
   // the currently-effective catalog, with one synthetic model id per pattern
   // so clients can pick a model without knowing the (provider, pattern) split.
-  app.get("/gw/v1/models", async () => {
+  app.get(
+    "/gw/v1/models",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async () => {
     const entries = deps.pricing.catalog?.() ?? [];
     const seen = new Map<string, { id: string; provider: string; pattern: string }>();
     for (const e of entries) {
@@ -116,10 +147,15 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
       object: "list",
       data: [...seen.values()].sort((a, b) => a.id.localeCompare(b.id)),
     };
-  });
+  },
+  );
 
   // Native passthrough surface: /gw/{provider}/*
-  app.all("/gw/:provider/*", makeGatewayHandler(deps, logger));
+  app.all(
+    "/gw/:provider/*",
+    { config: { rateLimit: { max: 600, timeWindow: "1 minute" } } },
+    makeGatewayHandler(deps, logger),
+  );
 
   return { app, redis, subscriber, deps, pricingSource };
 }

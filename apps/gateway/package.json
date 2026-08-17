@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@fastify/rate-limit": "^10.2.0",
     "@tokenledger/auth": "workspace:*",
     "@tokenledger/config": "workspace:*",
     "@tokenledger/db": "workspace:*",
