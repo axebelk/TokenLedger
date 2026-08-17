@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message,
+  Alert, Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography, message,
 } from "antd";
 import { LinkOutlined, UserAddOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { membersApi, type Invitation, type Member } from "../../api/endpoints.js";
+import { useAuth } from "../../providers/auth-context.js";
 import { ApiError } from "../../api/client.js";
 import { CopyField } from "../../components/CopyField.js";
 import { PageHeader } from "../../components/PageHeader.js";
@@ -15,9 +16,21 @@ const ROLE_COLORS: Record<string, string> = {
   OWNER: "gold", ADMIN: "geekblue", MEMBER: "default", VIEWER: "purple",
 };
 
+function mutationError(err: unknown, fallback: string): string {
+  return err instanceof ApiError ? err.message : fallback;
+}
+
 export function MembersPage() {
   const { ws = "" } = useParams();
   const queryClient = useQueryClient();
+  const auth = useAuth();
+  // We only know roles per-workspace from the /auth/me memberships list — derive
+  // whether the *current viewer* is an ADMIN here so the row actions can hide.
+  const viewerRole =
+    auth.memberships.find((m) => m.workspace.slug === ws)?.role ?? "VIEWER";
+  const isViewerAdmin = viewerRole === "ADMIN" || viewerRole === "OWNER";
+  const viewerUserId = auth.user?.id;
+
   const members = useQuery({ queryKey: [ws, "members"], queryFn: () => membersApi.list(ws) });
   const invitations = useQuery({
     queryKey: [ws, "invitations"],
@@ -49,6 +62,26 @@ export function MembersPage() {
     onError: () => void message.error("Couldn't generate invite link"),
   });
 
+  const updateRole = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      membersApi.updateMember(ws, userId, { role }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ws, "members"] });
+    },
+    onError: (err) => void message.error(mutationError(err, "Couldn't update role")),
+  });
+
+  const removeMember = useMutation({
+    mutationFn: (userId: string) => membersApi.removeMember(ws, userId),
+    onSuccess: () => {
+      // If the viewer removed themselves from the current workspace, their
+      // memberships list changes — reload it so the sidebar/redirects react.
+      void queryClient.invalidateQueries({ queryKey: [ws, "members"] });
+      return auth.reloadMemberships();
+    },
+    onError: (err) => void message.error(mutationError(err, "Couldn't remove member")),
+  });
+
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="large">
       <PageHeader
@@ -71,11 +104,70 @@ export function MembersPage() {
             { title: "Email", dataIndex: "email" },
             {
               title: "Role", dataIndex: "role",
-              render: (role: string) => <Tag color={ROLE_COLORS[role] ?? "default"}>{role}</Tag>,
+              render: (role: string, row) => {
+                if (!isViewerAdmin || role === "OWNER" || row.id === viewerUserId) {
+                  // Owners manage themselves via /transfer (Phase 2); for now, render-only.
+                  return <Tag color={ROLE_COLORS[role] ?? "default"}>{role}</Tag>;
+                }
+                const editing = updateRole.isPending && updateRole.variables?.userId === row.id;
+                return (
+                  <Select
+                    value={role}
+                    loading={editing}
+                    disabled={editing}
+                    style={{ width: 140 }}
+                    options={[
+                      { value: "ADMIN", label: <Tag color="geekblue">ADMIN</Tag> },
+                      { value: "MEMBER", label: <Tag>MEMBER</Tag> },
+                      { value: "VIEWER", label: <Tag color="purple">VIEWER</Tag> },
+                    ]}
+                    onChange={(next) => updateRole.mutate({ userId: row.id, role: next })}
+                  />
+                );
+              },
             },
             {
               title: "Joined", dataIndex: "joinedAt",
               render: (v: string) => dayjs(v).format("MMM D, YYYY"),
+            },
+            {
+              title: "",
+              key: "actions",
+              align: "right",
+              render: (_, row) => {
+                // Allow self-leave for everyone; allow remove-other only for admins,
+                // and never touch an OWNER (server enforces the last-OWNER rule).
+                if (row.id !== viewerUserId && !isViewerAdmin) return null;
+                if (row.role === "OWNER") {
+                  return (
+                    <Tooltip title="OWNER is permanent — transfer ownership to demote">
+                      <Button size="small" disabled>Remove</Button>
+                    </Tooltip>
+                  );
+                }
+                const label = row.id === viewerUserId ? "Leave workspace" : "Remove";
+                return (
+                  <Popconfirm
+                    title={
+                      row.id === viewerUserId
+                        ? "Leave this workspace?"
+                        : `Remove ${row.name} from the workspace?`
+                    }
+                    description={
+                      row.id === viewerUserId
+                        ? "You'll need a fresh invite to rejoin."
+                        : "Their projects and keys remain; they just lose access."
+                    }
+                    okText="Confirm"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => removeMember.mutate(row.id)}
+                  >
+                    <Button danger size="small" loading={removeMember.isPending && removeMember.variables === row.id}>
+                      {label}
+                    </Button>
+                  </Popconfirm>
+                );
+              },
             },
           ]}
         />

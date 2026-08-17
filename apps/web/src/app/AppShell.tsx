@@ -1,6 +1,6 @@
 import { Layout, Menu, Space, Typography, Button, Tag } from "antd";
 import {
-  ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined, GlobalOutlined,
+  ApiOutlined, AppstoreOutlined, BarChartOutlined, DashboardOutlined, DollarOutlined, GlobalOutlined,
   KeyOutlined, RocketOutlined, TableOutlined, TeamOutlined, UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
@@ -40,6 +40,7 @@ export function AppShell() {
             { key: "teams", icon: <UsergroupAddOutlined />, label: <Link to={`/${ws}/teams`}>Teams</Link> },
             { key: "providers", icon: <ApiOutlined />, label: <Link to={`/${ws}/providers`}>Providers</Link> },
             { key: "members", icon: <TeamOutlined />, label: <Link to={`/${ws}/members`}>Members</Link> },
+            { key: "pricing", icon: <DollarOutlined />, label: <Link to={`/${ws}/pricing`}>Pricing</Link> },
           ]}
         />
       </Sider>

@@ -102,6 +102,22 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   // Registered before the native catch-all so /gw/v1/... isn't captured by it.
   app.post("/gw/v1/chat/completions", makeUnifiedHandler(deps, logger));
 
+  // OpenAI-compatible model listing. Returns every (provider, pattern) pair in
+  // the currently-effective catalog, with one synthetic model id per pattern
+  // so clients can pick a model without knowing the (provider, pattern) split.
+  app.get("/gw/v1/models", async () => {
+    const entries = deps.pricing.catalog?.() ?? [];
+    const seen = new Map<string, { id: string; provider: string; pattern: string }>();
+    for (const e of entries) {
+      const id = `${e.provider.toLowerCase()}/${e.modelPattern.replace(/\*$/, "")}`;
+      if (!seen.has(id)) seen.set(id, { id, provider: e.provider, pattern: e.modelPattern });
+    }
+    return {
+      object: "list",
+      data: [...seen.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    };
+  });
+
   // Native passthrough surface: /gw/{provider}/*
   app.all("/gw/:provider/*", makeGatewayHandler(deps, logger));
 

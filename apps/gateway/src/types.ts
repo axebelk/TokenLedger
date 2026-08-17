@@ -51,6 +51,12 @@ export interface EventSink {
 export interface PricingSource {
   /** workspaceId enables per-workspace price overrides when available. */
   match(provider: Provider, model: string, workspaceId?: string): PriceEntry | null;
+  /**
+   * Currently-effective global catalog snapshot, used by GET /v1/models.
+   * Optional so test doubles can stay minimal; the gateway falls back to an
+   * empty list when the implementation doesn't expose it.
+   */
+  catalog?(): PriceEntry[];
 }
 
 export interface RateLimitDecision {

@@ -20,6 +20,7 @@ import { registerKeysModule } from "./modules/keys.js";
 import { registerAnalyticsModule } from "./modules/analytics.js";
 import { registerExportsModule } from "./modules/exports.js";
 import { registerInvitationsModule } from "./modules/invitations.js";
+import { registerPricingModule } from "./modules/pricing.js";
 import { createMailer } from "./lib/mailer.js";
 
 export type ApiServer = Awaited<ReturnType<typeof buildServer>>;
@@ -130,6 +131,7 @@ export async function buildServer(config: ApiConfig) {
         mailer: createMailer(config.SMTP_URL, logger, "TokenTrail <noreply@tokentrail.local>"),
         publicBaseUrl: config.PUBLIC_BASE_URL,
       });
+      registerPricingModule(api, { prisma, authenticate });
     },
     { prefix: "/api/v1" },
   );
