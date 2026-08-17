@@ -22,12 +22,17 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    # release-please needs write access to open the release PR (contents: write)
+    # and to attach a tracking issue (pull-requests: write). Scoped to this job
+    # only — no other workflow steps get more than read.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         id: release
