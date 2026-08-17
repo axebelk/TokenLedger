@@ -44,12 +44,12 @@ export const mintInviteToken = (): MintedToken => mint(TOKEN_PREFIX.invite, 32);
 export const mintRefreshToken = (): MintedToken => mint("ttr_", 48);
 
 // codeql[js/insufficient-password-hash]: virtual keys, PATs, invite tokens,
-  // and refresh cookies are 256-bit cryptographically-random base62 strings —
-  // not user-chosen passwords — so SHA-256 is the appropriate hash here.
-  // Password hashing (with scrypt + per-user salt) lives in session.ts.
-  export function sha256Hex(value: string): string {
-    return createHash("sha256").update(value).digest("hex");
-  }
+// and refresh cookies are 256-bit cryptographically random — not user
+// passwords — so SHA-256 (preimage space 2^256) is the right hash here.
+// Password hashing (scrypt + per-user salt) lives in session.ts.
+export function sha256Hex(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 /** Constant-time comparison of a presented token against a stored hash. */
 export function verifyTokenHash(presentedToken: string, storedHash: string): boolean {
