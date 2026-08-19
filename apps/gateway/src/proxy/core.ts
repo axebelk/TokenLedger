@@ -153,11 +153,16 @@ export class EventFinalizer {
   private done = false;
   private ttftMs: number | undefined;
   private credentialId: string | undefined;
+  private poolId: string | undefined;
 
   constructor(private readonly info: EventFinalizerInfo) {}
 
   setCredentialId(id: string): void {
     this.credentialId = id;
+  }
+
+  setPoolId(id: string): void {
+    this.poolId = id;
   }
 
   markFirstByte(): void {
@@ -201,6 +206,7 @@ export class EventFinalizer {
       userId: ctx.userId,
       virtualKeyId: ctx.vkId,
       ...(this.credentialId ? { credentialId: this.credentialId } : {}),
+      ...(this.poolId ? { poolId: this.poolId } : {}),
       provider,
       modelRaw: requestModel || model,
       model,
@@ -235,6 +241,16 @@ export class EventFinalizer {
       deps.sink.emit(event);
     } catch (err) {
       this.info.logger.error({ err }, "usage event emission threw — event dropped");
+    }
+
+    // Rate-limit / server errors start a cooldown window (report-page
+    // visibility on CE; drives pool failover on EE) — see FR-GW-EE. Only
+    // fires on the failure path so a successful hot-path request never pays
+    // for an extra Redis round trip.
+    if (this.credentialId && (args.httpStatus === 429 || args.httpStatus >= 500)) {
+      deps.credentialStore.reportOutcome?.(this.credentialId).catch((err: unknown) => {
+        this.info.logger.warn({ err }, "credential cooldown report failed");
+      });
     }
   }
 }

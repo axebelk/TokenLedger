@@ -1,5 +1,5 @@
 import pg from "pg";
-import type { Provider } from "@tokenledger/shared";
+import { setCredentialCooldown, type CooldownRedis, type Provider } from "@tokenledger/shared";
 import { decryptSecret, type MasterKeyRing } from "@tokenledger/auth";
 import type {
   CredentialStore,
@@ -84,6 +84,10 @@ export class PgCredentialStore implements CredentialStore {
   constructor(
     private pool: pg.Pool,
     private ring: MasterKeyRing | null,
+    // Optional: when present, failed credentials get a cooldown window so the
+    // usage/limits report page can show live status + reset time. CE has no
+    // pool to route around a cooling-down credential — this is visibility only.
+    private redis?: CooldownRedis,
   ) {}
 
   async getDefault(
@@ -118,5 +122,10 @@ export class PgCredentialStore implements CredentialStore {
       ...(secret !== undefined ? { secret } : {}),
       ...(row.baseUrl ? { baseUrl: row.baseUrl } : {}),
     };
+  }
+
+  async reportOutcome(credentialId: string): Promise<void> {
+    if (!this.redis) return;
+    await setCredentialCooldown(this.redis, credentialId);
   }
 }

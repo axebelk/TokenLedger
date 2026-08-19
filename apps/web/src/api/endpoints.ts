@@ -37,6 +37,57 @@ export interface Credential {
   baseUrl: string | null; isDefault: boolean; status: string; createdAt: string;
 }
 
+export interface CredentialUsageRow {
+  credentialId: string;
+  provider: Provider;
+  name: string;
+  secretLast4: string | null;
+  status: string;
+  requests1h: number;
+  requests24h: number;
+  errors24h: number;
+  inputTokens24h: number;
+  outputTokens24h: number;
+  costUsd24h: string;
+  coolingDown: boolean;
+  resetsAt: string | null;
+}
+
+export type PoolStrategy = "PRIORITY" | "ROUND_ROBIN" | "WEIGHTED";
+export type PoolHealth = "HEALTHY" | "DEGRADED" | "DISABLED";
+
+export interface PoolMember {
+  id: string;
+  credentialId: string;
+  credentialName: string;
+  secretLast4: string | null;
+  credentialStatus: string;
+  priority: number;
+  weight: number;
+  rpmLimit: number | null;
+  tpmLimit: number | null;
+  health: PoolHealth;
+  healthChangedAt: string | null;
+}
+
+export interface Pool {
+  id: string; provider: Provider; name: string;
+  strategy: PoolStrategy; cooldownS: number; createdAt: string;
+  members: PoolMember[];
+}
+
+export interface PoolMemberStatus extends PoolMember {
+  coolingDown: boolean;
+  resetsAt: string | null;
+}
+
+export interface PoolStatus {
+  poolId: string;
+  strategy: PoolStrategy;
+  cooldownS: number;
+  members: PoolMemberStatus[];
+}
+
 export interface VirtualKey {
   id: string; name: string; keyLast4: string; projectId: string; userId: string;
   providerAllowlist: Provider[]; credentialAllowlist: string[]; modelAllowlist: string[];
@@ -167,6 +218,22 @@ export const wsApi = {
   ) => api<Credential>(`/workspaces/${ws}/credentials/${id}`, { method: "PATCH", body }),
   deleteCredential: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/credentials/${id}`, { method: "DELETE" }),
+  credentialsUsage: (ws: string) =>
+    api<{ data: CredentialUsageRow[] }>(`/workspaces/${ws}/credentials/usage`),
+  pools: (ws: string) => api<{ data: Pool[] }>(`/workspaces/${ws}/pools`),
+  poolStatus: (ws: string, id: string) => api<PoolStatus>(`/workspaces/${ws}/pools/${id}/status`),
+  createPool: (ws: string, body: { provider: Provider; name: string; strategy?: "PRIORITY" | "ROUND_ROBIN" | "WEIGHTED"; cooldownS?: number }) =>
+    api<Pool>(`/workspaces/${ws}/pools`, { method: "POST", body }),
+  updatePool: (ws: string, id: string, body: { name?: string; strategy?: "PRIORITY" | "ROUND_ROBIN" | "WEIGHTED"; cooldownS?: number }) =>
+    api<Pool>(`/workspaces/${ws}/pools/${id}`, { method: "PATCH", body }),
+  deletePool: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/pools/${id}`, { method: "DELETE" }),
+  addPoolMember: (ws: string, poolId: string, body: { credentialId: string; priority?: number; weight?: number; rpmLimit?: number; tpmLimit?: number }) =>
+    api<PoolMember>(`/workspaces/${ws}/pools/${poolId}/members`, { method: "POST", body }),
+  updatePoolMember: (ws: string, poolId: string, memberId: string, body: { priority?: number; weight?: number; rpmLimit?: number | null; tpmLimit?: number | null; health?: "HEALTHY" | "DEGRADED" | "DISABLED" }) =>
+    api<PoolMember>(`/workspaces/${ws}/pools/${poolId}/members/${memberId}`, { method: "PATCH", body }),
+  removePoolMember: (ws: string, poolId: string, memberId: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/pools/${poolId}/members/${memberId}`, { method: "DELETE" }),
   keys: (ws: string) => api<{ data: VirtualKey[] }>(`/workspaces/${ws}/keys`),
   issueKey: (
     ws: string,

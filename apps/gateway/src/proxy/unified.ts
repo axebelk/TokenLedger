@@ -142,6 +142,7 @@ export function makeUnifiedHandler(deps: GatewayDeps, logger: Logger) {
         `No active ${providerSlug} credential configured for this workspace`, request.id);
     }
     emitter.setCredentialId(credential.credentialId);
+    if (credential.poolId) emitter.setPoolId(credential.poolId);
 
     // ── Translate the request per provider shape ────────────────────────────
     let upstreamPath: string;

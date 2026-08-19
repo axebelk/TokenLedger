@@ -14,11 +14,14 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@tokenledger/auth": "workspace:*",
     "@tokenledger/queue": "workspace:*",
-    "@tokenledger/shared": "workspace:*"
+    "@tokenledger/shared": "workspace:*",
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   }

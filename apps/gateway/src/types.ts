@@ -27,6 +27,8 @@ export interface ResolvedCredentialSecret {
   credentialId: string;
   secret?: string;
   baseUrl?: string;
+  /** Set when this credential was resolved via a ProviderPool (EE round-robin/failover). */
+  poolId?: string;
 }
 
 export interface CredentialStore {
@@ -35,12 +37,25 @@ export interface CredentialStore {
    * `allowedIds` is non-empty (a key's credentialAllowlist), resolution is
    * restricted to that set — still preferring the isDefault-flagged one
    * among them, falling back to the oldest active match otherwise.
+   *
+   * When a ProviderPool exists for (workspaceId, provider), an EE-wrapped
+   * store selects among its healthy, non-cooling-down members per the pool's
+   * strategy (PRIORITY / ROUND_ROBIN / WEIGHTED) instead — see
+   * `@tokenledger/ee-gateway`'s PoolAwareCredentialStore.
    */
   getDefault(
     workspaceId: string,
     provider: Provider,
     allowedIds?: string[],
   ): Promise<ResolvedCredentialSecret | null>;
+
+  /**
+   * Mark a credential as having just failed (429/5xx from the upstream
+   * provider) — starts a cooldown window so pool selection (EE) routes
+   * around it, and so the usage/limits report page can show "resets at".
+   * Optional: test doubles and stores without Redis can omit it.
+   */
+  reportOutcome?(credentialId: string): Promise<void>;
 }
 
 export interface EventSink {

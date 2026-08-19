@@ -11,6 +11,7 @@ import { ProjectsPage } from "./features/projects/ProjectsPage.js";
 import { TeamsPage } from "./features/teams/TeamsPage.js";
 import { TeamDetailPage } from "./features/teams/TeamDetailPage.js";
 import { ProvidersPage } from "./features/providers/ProvidersPage.js";
+import { PoolsPage } from "./features/pools/PoolsPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
 import { PricingPage } from "./features/pricing/PricingPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
@@ -47,6 +48,7 @@ export function App() {
             <Route path="teams" element={<TeamsPage />} />
             <Route path="teams/:teamId" element={<TeamDetailPage />} />
             <Route path="providers" element={<ProvidersPage />} />
+            <Route path="pools" element={<PoolsPage />} />
             <Route path="members" element={<MembersPage />} />
             <Route path="pricing" element={<PricingPage />} />
           </Route>

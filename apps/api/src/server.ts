@@ -23,6 +23,7 @@ import { registerExportsModule } from "./modules/exports.js";
 import { registerInvitationsModule } from "./modules/invitations.js";
 import { registerBudgetsModule } from "./modules/budgets.js";
 import { registerPricingModule } from "./modules/pricing.js";
+import { registerPoolsModule } from "./modules/pools.js";
 import { createMailer } from "./lib/mailer.js";
 import { activeLicense, initLicensing, EE_FEATURES, entitled } from "@tokenledger/ee-licensing";
 
@@ -155,7 +156,7 @@ api.get("/meta/version", async () => {
       registerAdminModule(api, { prisma, authenticate, superAdminGuard });
       registerOrgModule(api, { prisma, authenticate });
       registerTeamsModule(api, { prisma, authenticate });
-      registerCredentialsModule(api, { prisma, authenticate, ring });
+      registerCredentialsModule(api, { prisma, authenticate, ring, redis });
       registerKeysModule(api, { prisma, redis, authenticate });
       registerAnalyticsModule(api, { prisma, authenticate });
       registerExportsModule(api, { prisma, authenticate, exportQueue });
@@ -167,6 +168,7 @@ api.get("/meta/version", async () => {
       });
 registerBudgetsModule(api, { prisma, redis, authenticate });
       registerPricingModule(api, { prisma, authenticate });
+      registerPoolsModule(api, { prisma, redis, authenticate });
     },
     { prefix: "/api/v1" },
   );

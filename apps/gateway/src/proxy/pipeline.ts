@@ -125,6 +125,7 @@ export function makeGatewayHandler(deps: GatewayDeps, logger: Logger) {
         `No active ${slug} credential configured for this workspace`, request.id);
     }
     emitter.setCredentialId(credential.credentialId);
+    if (credential.poolId) emitter.setPoolId(credential.poolId);
 
     // ── Proxy ────────────────────────────────────────────────────────────────
     const upstream = adapter.buildUpstream(subPath, credential);

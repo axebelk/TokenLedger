@@ -1,10 +1,11 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { request as undiciRequest } from "undici";
 import { z } from "zod";
-import { PROVIDERS, NotFoundError, ValidationError } from "@tokenledger/shared";
+import { PROVIDERS, NotFoundError, ValidationError, getCredentialCooldownTtl } from "@tokenledger/shared";
 import { encryptSecret, type MasterKeyRing } from "@tokenledger/auth";
 import { getAdapter, supportedProviders } from "@tokenledger/providers";
-import type { PrismaClient } from "@tokenledger/db";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
+import type { Redis } from "@tokenledger/queue";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const createSchema = z.object({
@@ -27,10 +28,11 @@ interface CredModuleOptions {
   prisma: PrismaClient;
   authenticate: preHandlerHookHandler;
   ring: MasterKeyRing | null;
+  redis: Redis;
 }
 
 export function registerCredentialsModule(app: FastifyInstance, opts: CredModuleOptions): void {
-  const { prisma, authenticate, ring } = opts;
+  const { prisma, authenticate, ring, redis } = opts;
   const admin = [authenticate, makeWorkspaceGuard(prisma, "ADMIN")];
 
   app.get("/workspaces/:ws/credentials", { preHandler: admin }, async (request) => {
@@ -199,5 +201,63 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
       throw err;
     }
     return { ok: true };
+  });
+
+  // Usage/limits report (FR-GW-EE): per-credential request volume and live
+  // cooldown status so admins running N keys behind a pool can see who's
+  // carrying load and who just got rate-limited — and when it resets. Works
+  // without a pool too (single-credential visibility is community-tier).
+  app.get("/workspaces/:ws/credentials/usage", { preHandler: admin }, async (request) => {
+    const workspaceId = request.wsCtx!.workspaceId;
+    const credentials = await prisma.providerCredential.findMany({
+      where: { workspaceId },
+      select: { id: true, provider: true, name: true, secretLast4: true, status: true },
+      orderBy: [{ provider: "asc" }, { createdAt: "asc" }],
+    });
+    if (credentials.length === 0) return { data: [] };
+
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const since1h = new Date(Date.now() - 60 * 60 * 1000);
+    const rows = await prisma.$queryRaw<
+      { credentialId: string; requests_1h: bigint; requests_24h: bigint; errors_24h: bigint;
+        input_tokens_24h: bigint; output_tokens_24h: bigint; cost_24h: Prisma.Decimal }[]
+    >`
+      SELECT "credentialId",
+             COUNT(*) FILTER (WHERE "occurredAt" >= ${since1h})::bigint AS requests_1h,
+             COUNT(*)::bigint AS requests_24h,
+             COUNT(*) FILTER (WHERE status != 'OK')::bigint AS errors_24h,
+             COALESCE(SUM("inputTokens"), 0)::bigint AS input_tokens_24h,
+             COALESCE(SUM("outputTokens"), 0)::bigint AS output_tokens_24h,
+             COALESCE(SUM("costUsd"), 0)::numeric AS cost_24h
+        FROM "usage_event"
+       WHERE "workspaceId" = ${workspaceId}::uuid
+         AND "credentialId" IS NOT NULL
+         AND "occurredAt" >= ${since24h}
+       GROUP BY "credentialId"
+    `;
+    const byId = new Map(rows.map((r) => [r.credentialId, r]));
+
+    const data = await Promise.all(
+      credentials.map(async (c) => {
+        const agg = byId.get(c.id);
+        const cooldownTtlS = await getCredentialCooldownTtl(redis, c.id);
+        return {
+          credentialId: c.id,
+          provider: c.provider,
+          name: c.name,
+          secretLast4: c.secretLast4,
+          status: c.status,
+          requests1h: Number(agg?.requests_1h ?? 0),
+          requests24h: Number(agg?.requests_24h ?? 0),
+          errors24h: Number(agg?.errors_24h ?? 0),
+          inputTokens24h: Number(agg?.input_tokens_24h ?? 0),
+          outputTokens24h: Number(agg?.output_tokens_24h ?? 0),
+          costUsd24h: (agg?.cost_24h ?? new Prisma.Decimal(0)).toString(),
+          coolingDown: cooldownTtlS !== null,
+          resetsAt: cooldownTtlS !== null ? new Date(Date.now() + cooldownTtlS * 1000).toISOString() : null,
+        };
+      }),
+    );
+    return { data };
   });
 }

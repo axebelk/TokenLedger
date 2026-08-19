@@ -1,5 +1,8 @@
 import type { Redis } from "@tokenledger/queue";
 
+export { PoolAwareCredentialStore } from "./pool-credential-store.js";
+export type { CredentialStore, ResolvedCredentialSecret } from "./pool-credential-store.js";
+
 export interface BudgetScopes {
   workspaceId: string;
   projectId: string;

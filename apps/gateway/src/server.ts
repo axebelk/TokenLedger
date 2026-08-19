@@ -6,7 +6,7 @@ import { keyRingFromEnv } from "@tokenledger/auth";
 import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
 import { createRedis, pingRedis } from "@tokenledger/queue";
 import { entitled, initLicensing } from "@tokenledger/ee-licensing";
-import { RedisBudgetGuard } from "@tokenledger/ee-gateway";
+import { RedisBudgetGuard, PoolAwareCredentialStore } from "@tokenledger/ee-gateway";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
 import { MAX_REQUEST_BODY } from "./proxy/core.js";
@@ -51,14 +51,20 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
     });
     pricingSource = new PgPricingSource(pool, logger);
     await pricingSource.start();
+    const baseCredentialStore = new PgCredentialStore(pool, ring, redis);
     deps = {
       keyStore,
-      credentialStore: new PgCredentialStore(pool, ring),
+      credentialStore: entitled("provider_pools")
+        ? new PoolAwareCredentialStore(pool, ring, redis, baseCredentialStore)
+        : baseCredentialStore,
       sink: new RedisStreamSink(redis, logger, eventsDropped),
       pricing: pricingSource,
       rateLimiter: new RedisRateLimiter(redis),
       ...overrides,
     };
+    if (entitled("provider_pools")) {
+      logger.info("enterprise provider pools (round-robin/failover) active");
+    }
   } else {
     if (!overrides?.keyStore) {
       logger.warn("DATABASE_URL not set — gateway running with empty in-memory stores (dev only)");

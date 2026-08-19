@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Card, Drawer, Form, Input, Popconfirm, Select, Space, Table, Tag, message,
+  Alert, Button, Card, Drawer, Form, Input, Popconfirm, Select, Space, Statistic, Table, Tag, Tooltip, Typography, message,
 } from "antd";
-import { EditOutlined, PlusOutlined, ThunderboltOutlined } from "@ant-design/icons";
-import { useParams } from "react-router-dom";
 import {
-  ACTIVE_PROVIDERS, ALL_PROVIDERS, wsApi, type Credential, type Provider,
+  ClockCircleOutlined, EditOutlined, PlusOutlined, ThunderboltOutlined,
+} from "@ant-design/icons";
+import { useParams } from "react-router-dom";
+import dayjs from "dayjs";
+import {
+  ACTIVE_PROVIDERS, ALL_PROVIDERS, formatUsd, wsApi, type Credential, type CredentialUsageRow, type Provider,
 } from "../../api/endpoints.js";
 import { ApiError } from "../../api/client.js";
 
@@ -14,9 +17,26 @@ export function ProvidersPage() {
   const { ws = "" } = useParams();
   const queryClient = useQueryClient();
   const credentials = useQuery({ queryKey: [ws, "credentials"], queryFn: () => wsApi.credentials(ws) });
+  const usage = useQuery({
+    queryKey: [ws, "credentials", "usage"],
+    queryFn: () => wsApi.credentialsUsage(ws),
+    refetchInterval: 15_000,
+  });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Credential | null>(null);
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: [ws, "credentials"] });
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: [ws, "credentials"] });
+    void queryClient.invalidateQueries({ queryKey: [ws, "credentials", "usage"] });
+  };
+
+  const usageByCred = new Map<string, CredentialUsageRow>(
+    (usage.data?.data ?? []).map((u) => [u.credentialId, u]),
+  );
+
+  const totalReq24h = (usage.data?.data ?? []).reduce((sum, u) => sum + u.requests24h, 0);
+  const totalErr24h = (usage.data?.data ?? []).reduce((sum, u) => sum + u.errors24h, 0);
+  const anyCooling = (usage.data?.data ?? []).some((u) => u.coolingDown);
+  const totalCost24h = (usage.data?.data ?? []).reduce((sum, u) => sum + Number(u.costUsd24h), 0);
 
   const test = useMutation({
     mutationFn: (id: string) => wsApi.testCredential(ws, id),
@@ -38,14 +58,35 @@ export function ProvidersPage() {
   });
 
   return (
-    <Card
-      title="Provider credentials"
-      extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-          Add credential
-        </Button>
-      }
-    >
+    <Space direction="vertical" style={{ width: "100%" }} size="large">
+      <Card
+        title="Last 24 hours — across all credentials"
+        loading={usage.isLoading && usage.data === undefined}
+      >
+        {anyCooling && (
+          <Alert
+            type="warning"
+            showIcon
+            icon={<ClockCircleOutlined />}
+            message="One or more credentials are currently in cooldown (recent 429 / 5xx) — pool failover is routing around them."
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        <Space size="large" wrap>
+          <Statistic title="Requests" value={totalReq24h} />
+          <Statistic title="Errors" value={totalErr24h} valueStyle={{ color: totalErr24h > 0 ? "#cf1322" : undefined }} />
+          <Statistic title="Cost (last 24h)" value={totalCost24h} prefix="$" precision={2} />
+          <Statistic title="Active credentials" value={(credentials.data?.data ?? []).filter((c) => c.status === "ACTIVE").length} />
+        </Space>
+      </Card>
+      <Card
+        title="Provider credentials"
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+            Add credential
+          </Button>
+        }
+      >
       <Table<Credential>
         rowKey="id"
         loading={credentials.isLoading}
@@ -66,15 +107,6 @@ export function ProvidersPage() {
             render: (v: string | null) => (v ? `••••${v}` : "—"),
           },
           { title: "Base URL", dataIndex: "baseUrl", render: (v: string | null) => v ?? "—" },
-          {
-            title: "Status", dataIndex: "status",
-            render: (status: string, c) => (
-              <Space>
-                <Tag color={status === "ACTIVE" ? "green" : "default"}>{status}</Tag>
-                {c.isDefault && <Tag color="blue">default</Tag>}
-              </Space>
-            ),
-          },
           {
             title: "",
             width: 260,
@@ -108,6 +140,65 @@ export function ProvidersPage() {
               </Space>
             ),
           },
+          {
+            title: "Status",
+            dataIndex: "status",
+            render: (status: string, c) => {
+              const u = usageByCred.get(c.id);
+              const liveStatus = !u ? null : u.coolingDown
+                ? { tag: "cooldown", color: "red", tip: u.resetsAt
+                    ? `Resets at ${dayjs(u.resetsAt).format("HH:mm:ss")}`
+                    : "Cooling down"
+                }
+                : u.errors24h > 0 && u.requests24h > 0 && u.errors24h / u.requests24h > 0.1
+                  ? { tag: "degraded", color: "orange", tip: `${u.errors24h} errors / ${u.requests24h} requests in the last 24h` }
+                  : null;
+              return (
+                <Space wrap>
+                  <Tag color={status === "ACTIVE" ? "green" : "default"}>{status}</Tag>
+                  {c.isDefault && <Tag color="blue">default</Tag>}
+                  {liveStatus && (
+                    <Tooltip title={liveStatus.tip}>
+                      <Tag color={liveStatus.color} icon={liveStatus.tag === "cooldown" ? <ClockCircleOutlined /> : undefined}>
+                        {liveStatus.tag}
+                      </Tag>
+                    </Tooltip>
+                  )}
+                </Space>
+              );
+            },
+          },
+          {
+            title: "Req / 24h",
+            key: "reqs",
+            align: "right",
+            width: 100,
+            render: (_, c) => {
+              const u = usageByCred.get(c.id);
+              if (!u) return <Typography.Text type="secondary">—</Typography.Text>;
+              return (
+                <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                    <strong>{u.requests24h.toLocaleString()}</strong>
+                  </span>
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    {u.requests1h.toLocaleString()} in last 1h
+                  </Typography.Text>
+                </Space>
+              );
+            },
+          },
+          {
+            title: "Cost / 24h",
+            key: "cost",
+            align: "right",
+            width: 110,
+            render: (_, c) => {
+              const u = usageByCred.get(c.id);
+              if (!u) return <Typography.Text type="secondary">—</Typography.Text>;
+              return <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatUsd(u.costUsd24h, true)}</span>;
+            },
+          },
         ]}
       />
       <AddCredentialDrawer ws={ws} open={open} onClose={() => setOpen(false)} onSaved={() => {
@@ -124,6 +215,7 @@ export function ProvidersPage() {
         }}
       />
     </Card>
+    </Space>
   );
 }
 
