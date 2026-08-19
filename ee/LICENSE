@@ -1,33 +1,7 @@
-TokenLedger Enterprise License (the "Enterprise License")
+This directory contains community-edition stubs for the TokenLedger enterprise
+packages. The real enterprise implementation is available under a separate
+license — see https://tokenledger.dev/enterprise for details.
 
-Copyright (c) 2026 TokenLedger contributors
+All software in this repository is licensed under the Apache License, Version 2.0
+— see the LICENSE file in the repository root.
 
-With regard to the software in this "ee/" directory and its subdirectories:
-
-This software and associated documentation files (the "Software") may only be
-used in production if you (and any entity that you represent) hold a valid
-TokenLedger Enterprise subscription for the correct number of seats. Subject to
-the foregoing sentence, you are free to modify this Software and publish
-patches to it. You agree that TokenLedger and/or its licensors (as applicable)
-retain all right, title and interest in and to all such modifications and/or
-patches, and all such modifications and/or patches may only be used, copied,
-modified, displayed, distributed, or otherwise exploited with a valid
-TokenLedger Enterprise subscription.
-
-Notwithstanding the foregoing, you may copy and modify the Software for
-development and testing purposes, without requiring a subscription.
-
-You agree not to remove, alter, or obscure any licensing, copyright, or other
-notices. Any use of the Software in violation of this license will
-automatically terminate your rights under this license.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-All software outside of this "ee/" directory is licensed under the Apache
-License, Version 2.0 — see the LICENSE file in the repository root.

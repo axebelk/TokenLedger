@@ -2,11 +2,10 @@ name: Publish Docker images
 
 # Builds the four TokenLedger service images and pushes them to the GitHub
 # Container Registry (GHCR). Runs on version tags (v1.2.3), on pushes to main
-# (tagged `edge`), on pushes to the enterprise branch (tagged `enterprise`),
-# and on manual dispatch.
+# (tagged `edge`), and on manual dispatch.
 on:
   push:
-    branches: [main, enterprise]
+    branches: [main]
     tags: ["v*.*.*"]
   workflow_dispatch:
 
@@ -57,7 +56,6 @@ jobs:
             type=ref,event=branch
             type=sha,format=short
             type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=enterprise,enable=${{ github.ref == 'refs/heads/enterprise' }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
