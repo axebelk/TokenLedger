@@ -1,7 +1,7 @@
-import { Prisma, type PrismaClient } from "@tokentrail/db";
-import type { Redis } from "@tokentrail/queue";
-import type { Logger } from "@tokentrail/telemetry";
-import { budgetBlockKey } from "@tokentrail/ee-gateway";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
+import type { Redis } from "@tokenledger/queue";
+import type { Logger } from "@tokenledger/telemetry";
+import { budgetBlockKey } from "@tokenledger/ee-gateway";
 import { periodWindow } from "./period.js";
 
 interface BudgetEngineOptions {

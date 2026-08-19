@@ -1,10 +1,10 @@
 import { Readable, pipeline as streamPipeline } from "node:stream";
 import { request as undiciRequest } from "undici";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { PROVIDERS } from "@tokentrail/shared";
-import { sha256Hex } from "@tokentrail/auth";
-import { getAdapter, type NormalizedUsage, type ProviderAdapter } from "@tokentrail/providers";
-import type { Logger } from "@tokentrail/telemetry";
+import { PROVIDERS } from "@tokenledger/shared";
+import { sha256Hex } from "@tokenledger/auth";
+import { getAdapter, type NormalizedUsage, type ProviderAdapter } from "@tokenledger/providers";
+import type { Logger } from "@tokenledger/telemetry";
 import type { GatewayDeps } from "../types.js";
 import {
   EventFinalizer, FrameTap, MAX_REQUEST_BODY, SKIP_HEADERS,
@@ -26,7 +26,7 @@ export function makeGatewayHandler(deps: GatewayDeps, logger: Logger) {
     // ── Auth: tt_live_ key from Authorization: Bearer or x-api-key ──────────
     const presented = extractKey(request);
     if (!presented) {
-      return sendGatewayError(reply, 401, "invalid_key", "Provide a TokenTrail virtual key (tt_live_…)", request.id);
+      return sendGatewayError(reply, 401, "invalid_key", "Provide a TokenLedger virtual key (tl_live_… or tt_live_… legacy)", request.id);
     }
     const ctx = await deps.keyStore.resolve(sha256Hex(presented));
     if (!ctx) return sendGatewayError(reply, 401, "invalid_key", "Unknown virtual key", request.id);
@@ -137,7 +137,7 @@ export function makeGatewayHandler(deps: GatewayDeps, logger: Logger) {
           ...forwardableHeaders(request.headers),
           ...upstream.headers,
           "accept-encoding": "identity",
-          "user-agent": "tokentrail-gateway/0.1",
+          "user-agent": "tokenledger-gateway/0.1",
         },
         ...(bodyBuf ? { body: bodyBuf } : {}),
         headersTimeout: 60_000,

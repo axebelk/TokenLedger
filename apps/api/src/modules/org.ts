@@ -1,7 +1,7 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { NotFoundError, ValidationError } from "@tokentrail/shared";
-import type { PrismaClient } from "@tokentrail/db";
+import { NotFoundError, ValidationError } from "@tokenledger/shared";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const createProjectSchema = z.object({

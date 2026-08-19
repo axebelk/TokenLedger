@@ -1,4 +1,4 @@
-# TokenTrail — Software Requirements Specification (SRS)
+# TokenLedger — Software Requirements Specification (SRS)
 
 **Version:** 1.0 · Follows IEEE 830 structure, adapted.
 
@@ -7,7 +7,7 @@
 ## 1. Introduction
 
 ### 1.1 Purpose
-Defines functional and non-functional requirements for TokenTrail v1.0: an AI cost-governance and usage-analytics platform consisting of a control-plane API, a data-plane gateway, background workers, and a web console.
+Defines functional and non-functional requirements for TokenLedger v1.0: an AI cost-governance and usage-analytics platform consisting of a control-plane API, a data-plane gateway, background workers, and a web console.
 
 ### 1.2 Scope
 In scope: multi-tenant workspaces, org modeling (teams/projects/users), provider credential vault, AI request proxying for 7 providers, usage metering, cost computation, analytics, reporting, exports, and the enterprise feature set (pools, budget enforcement, scheduled reports, SSO, Slack, audit logs, white labeling).
@@ -17,7 +17,7 @@ Out of scope: prompt content analytics, model quality evaluation, training/fine-
 | Term | Meaning |
 |---|---|
 | **Workspace** | Tenant root. All data is workspace-scoped. |
-| **Virtual Key (VK)** | TokenTrail-issued API key (`tt_live_…`) used by developers against the gateway. Maps to user + project + allowed providers/models. |
+| **Virtual Key (VK)** | TokenLedger-issued API key (`tt_live_…`) used by developers against the gateway. Maps to user + project + allowed providers/models. |
 | **Provider Credential** | A real upstream API key (encrypted at rest), owned by a workspace. |
 | **Provider Pool (EE)** | Ordered/weighted set of credentials for one provider with failover. |
 | **Usage Event** | Immutable per-request record: tokens, model, cost, latency, attribution. |
@@ -55,7 +55,7 @@ Notation: `FR-<area>-<n>`. Priority: **M**ust / **S**hould / **C**ould. Edition:
 
 ### 2.3 Provider Credentials (PROV)
 - **FR-PROV-1 (M, CE)** Register credentials for providers: `ANTHROPIC`, `OPENAI`, `GEMINI`, `MINIMAX`, `OPENROUTER`, `DEEPSEEK`, `OLLAMA` (Ollama credential = base URL, no secret required).
-- **FR-PROV-2 (M, CE)** Secrets encrypted at rest with AES-256-GCM using a key derived from `TOKENTRAIL_MASTER_KEY`; plaintext never returned by any API (last-4 display only).
+- **FR-PROV-2 (M, CE)** Secrets encrypted at rest with AES-256-GCM using a key derived from `TOKENLEDGER_MASTER_KEY`; plaintext never returned by any API (last-4 display only).
 - **FR-PROV-3 (M, CE)** "Test connection" action validates a credential against the provider (cheap list-models or 1-token call).
 - **FR-PROV-4 (M, EE)** Provider Pools: ordered members with weight, strategy (`PRIORITY`, `ROUND_ROBIN`, `WEIGHTED`), per-member RPM/TPM caps, health status; automatic failover on 401/429/5xx per policy; cooldown + half-open recovery probes.
 - **FR-PROV-5 (S, CE)** Per-credential model allowlist/denylist.
@@ -73,11 +73,11 @@ Notation: `FR-<area>-<n>`. Priority: **M**ust / **S**hould / **C**ould. Edition:
 - **FR-GW-4 (M, CE)** SSE and chunked streaming pass through with zero buffering; usage extracted from terminal SSE events (e.g., Anthropic `message_delta.usage`, OpenAI `stream_options.include_usage` injected automatically).
 - **FR-GW-5 (M, CE)** For providers that omit usage in stream responses, gateway falls back to local tokenization estimates and flags the event `costBasis=ESTIMATED`.
 - **FR-GW-6 (M, CE)** Every request produces a Usage Event (§2.6) published to BullMQ; queue publish is fire-and-forget off the response path.
-- **FR-GW-7 (M, CE)** Attribution headers (optional overrides, validated against VK scope): `x-tokentrail-project`, `x-tokentrail-tags`.
+- **FR-GW-7 (M, CE)** Attribution headers (optional overrides, validated against VK scope): `x-tokenledger-project`, `x-tokenledger-tags`.
 - **FR-GW-8 (M, CE)** Failure policy configurable per workspace: `FAIL_CLOSED` (metering DB down ⇒ still proxy, buffer events in Redis; Redis down ⇒ 503) vs `FAIL_OPEN` (always proxy; drop events as last resort, increment loss counter).
 - **FR-GW-9 (M, EE)** Budget enforcement pre-check: if any governing budget is exhausted with `enforcement=HARD`, respond `402 {"error":{"type":"budget_exceeded",…}}` without contacting the provider.
 - **FR-GW-10 (S, CE)** Per-key and per-workspace rate limiting (sliding window in Redis) ⇒ `429` with `retry-after`.
-- **FR-GW-11 (M, CE)** Request ID (`x-tokentrail-request-id`) returned on every response; provider errors passed through verbatim with provider status code.
+- **FR-GW-11 (M, CE)** Request ID (`x-tokenledger-request-id`) returned on every response; provider errors passed through verbatim with provider status code.
 
 ### 2.6 Usage Metering (USE)
 - **FR-USE-1 (M, CE)** Usage Event fields: id (UUIDv7), timestamp, workspaceId, projectId, teamId (denormalized from project at event time), userId, virtualKeyId, provider, credentialId, model (raw + normalized), endpoint, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, reasoningTokens, latencyMs, timeToFirstTokenMs (streams), status (`OK`/`PROVIDER_ERROR`/`BLOCKED_BUDGET`/`BLOCKED_RATELIMIT`/`AUTH_ERROR`), httpStatus, streamed flag, costBasis (`ACTUAL`/`ESTIMATED`/`OVERRIDDEN`), unit prices snapshot, costUsd (decimal 12,6), tags.

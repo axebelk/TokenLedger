@@ -1,7 +1,7 @@
 import type { ThemeConfig } from "antd";
 
 /**
- * TokenTrail design tokens — an interpretation of the "Notion" design language:
+ * TokenLedger design tokens — an interpretation of the "Notion" design language:
  * a warm paper-soft canvas, near-black Inter type with tight tracking, exactly
  * one structural accent (Notion blue) reserved for CTAs/links/active state, a
  * decorative-only multi-colour sticker palette for data viz, and a single deep

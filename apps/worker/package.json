@@ -1,5 +1,5 @@
 {
-  "name": "@tokentrail/worker",
+  "name": "@tokenledger/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,13 +11,13 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tokentrail/config": "workspace:*",
-    "@tokentrail/db": "workspace:*",
-    "@tokentrail/ee-licensing": "workspace:*",
-    "@tokentrail/ee-worker": "workspace:*",
-    "@tokentrail/queue": "workspace:*",
-    "@tokentrail/shared": "workspace:*",
-    "@tokentrail/telemetry": "workspace:*",
+"@tokenledger/config": "workspace:*",
+    "@tokenledger/db": "workspace:*",
+    "@tokenledger/ee-licensing": "workspace:*",
+    "@tokenledger/ee-worker": "workspace:*",
+    "@tokenledger/queue": "workspace:*",
+    "@tokenledger/shared": "workspace:*",
+    "@tokenledger/telemetry": "workspace:*",
     "bullmq": "^5.34.0",
     "tsx": "^4.19.0",
     "zod": "^3.24.0"

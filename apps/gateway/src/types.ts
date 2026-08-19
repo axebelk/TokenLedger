@@ -1,6 +1,6 @@
-import type { Provider } from "@tokentrail/shared";
-import type { UsageEventMessage } from "@tokentrail/queue";
-import type { PriceEntry } from "@tokentrail/pricing";
+import type { Provider } from "@tokenledger/shared";
+import type { UsageEventMessage } from "@tokenledger/queue";
+import type { PriceEntry } from "@tokenledger/pricing";
 
 /** Everything the hot path needs to know about a presented virtual key. */
 export interface ResolvedKeyContext {
@@ -51,6 +51,12 @@ export interface EventSink {
 export interface PricingSource {
   /** workspaceId enables per-workspace price overrides when available. */
   match(provider: Provider, model: string, workspaceId?: string): PriceEntry | null;
+  /**
+   * Currently-effective global catalog snapshot, used by GET /v1/models.
+   * Optional so test doubles can stay minimal; the gateway falls back to an
+   * empty list when the implementation doesn't expose it.
+   */
+  catalog?(): PriceEntry[];
 }
 
 export interface RateLimitDecision {
@@ -74,7 +80,7 @@ export type BudgetVerdict =
   | { blocked: false }
   | { blocked: true; scope: string; scopeId: string; resetsAt?: string };
 
-/** EE seam (FR-GW-9): implemented by @tokentrail/ee-gateway when licensed. */
+/** EE seam (FR-GW-9): implemented by @tokenledger/ee-gateway when licensed. */
 export interface BudgetGuard {
   check(scopes: BudgetScopes): Promise<BudgetVerdict>;
 }

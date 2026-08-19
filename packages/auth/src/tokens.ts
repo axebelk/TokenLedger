@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { TOKEN_PREFIX } from "@tokentrail/shared";
+import { TOKEN_PREFIX } from "@tokenledger/shared";
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -43,6 +43,10 @@ export const mintInviteToken = (): MintedToken => mint(TOKEN_PREFIX.invite, 32);
 /** Refresh token (cookie-borne, rotated on every use): `ttr_` + 48 base62 chars. */
 export const mintRefreshToken = (): MintedToken => mint("ttr_", 48);
 
+// codeql[js/insufficient-password-hash]: virtual keys, PATs, invite tokens,
+// and refresh cookies are 256-bit cryptographically random — not user
+// passwords — so SHA-256 (preimage space 2^256) is the right hash here.
+// Password hashing (scrypt + per-user salt) lives in session.ts.
 export function sha256Hex(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }

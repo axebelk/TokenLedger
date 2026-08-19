@@ -1,6 +1,6 @@
-import { publishUsageEvent, type Redis, type UsageEventMessage } from "@tokentrail/queue";
+import { publishUsageEvent, type Redis, type UsageEventMessage } from "@tokenledger/queue";
 import type { Counter } from "prom-client";
-import type { Logger } from "@tokentrail/telemetry";
+import type { Logger } from "@tokenledger/telemetry";
 import type { EventSink } from "./types.js";
 
 /**

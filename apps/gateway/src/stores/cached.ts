@@ -1,4 +1,4 @@
-import type { Redis } from "@tokentrail/queue";
+import type { Redis } from "@tokenledger/queue";
 import type { KeyStore, ResolvedKeyContext } from "../types.js";
 
 const REDIS_TTL_S = 60;

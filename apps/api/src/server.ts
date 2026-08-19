@@ -2,13 +2,14 @@ import Fastify, { type FastifyError } from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
-import { DomainError } from "@tokentrail/shared";
-import { keyRingFromEnv } from "@tokentrail/auth";
-import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
-import { createPrismaClient } from "@tokentrail/db";
-import { createQueue, createRedis, pingRedis, QUEUES } from "@tokentrail/queue";
+import { DomainError } from "@tokenledger/shared";
+import { keyRingFromEnv } from "@tokenledger/auth";
+import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
+import { createPrismaClient } from "@tokenledger/db";
+import { createQueue, createRedis, pingRedis, QUEUES } from "@tokenledger/queue";
 import type { ApiConfig } from "./config.js";
 import { makeAuthenticate, makeSuperAdminGuard, parseSuperAdmins } from "./plugins/guards.js";
 import { registerAuthModule } from "./modules/auth.js";
@@ -21,8 +22,9 @@ import { registerAnalyticsModule } from "./modules/analytics.js";
 import { registerExportsModule } from "./modules/exports.js";
 import { registerInvitationsModule } from "./modules/invitations.js";
 import { registerBudgetsModule } from "./modules/budgets.js";
+import { registerPricingModule } from "./modules/pricing.js";
 import { createMailer } from "./lib/mailer.js";
-import { activeLicense, initLicensing, EE_FEATURES, entitled } from "@tokentrail/ee-licensing";
+import { activeLicense, initLicensing, EE_FEATURES, entitled } from "@tokenledger/ee-licensing";
 
 export type ApiServer = Awaited<ReturnType<typeof buildServer>>;
 
@@ -32,7 +34,7 @@ export async function buildServer(config: ApiConfig) {
   const prisma = createPrismaClient(config.DATABASE_URL);
   const redis = createRedis(config.REDIS_URL);
   const exportQueue = createQueue(QUEUES.exportCsv, redis);
-  const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
+  const ring = config.TOKENLEDGER_MASTER_KEY ? keyRingFromEnv(config.TOKENLEDGER_MASTER_KEY) : null;
 
   const licensing = initLicensing(config.LICENSE_KEY, config.LICENSE_PUBLIC_KEY);
   if (config.LICENSE_KEY && !licensing.license) {
@@ -48,12 +50,29 @@ export async function buildServer(config: ApiConfig) {
   await app.register(helmet);
   await app.register(cors, { origin: config.PUBLIC_BASE_URL, credentials: true });
   await app.register(cookie);
+  // Per-IP rate limit on the public surface. Modules opt-in per-route with
+  // tighter limits (e.g. /auth/login, /workspaces/:ws/exports/:id/download).
+  // No `redis:` passed → plugin uses its default LocalStore. A future
+  // enhancement can share counters across API replicas.
+  await app.register(rateLimit, {
+    global: false,
+    nameSpace: "tl-api-ip:",
+    max: 300, // 5 req/s burst headroom for legitimate API clients
+    timeWindow: "1 minute",
+    errorResponseBuilder: (_req, context) => ({
+      type: "https://tokenledger.dev/problems/rate_limited",
+      title: "rate_limited",
+      status: 429,
+      detail: `Too many requests; retry in ${context.after}.`,
+      retryAfterSeconds: Math.ceil(context.ttl / 1000),
+    }),
+  });
 
   // RFC 9457 problem+json for everything that escapes a handler.
   app.setErrorHandler((error: FastifyError | ZodError | DomainError, request, reply) => {
     if (error instanceof ZodError) {
       return reply.status(400).type("application/problem+json").send({
-        type: "https://tokentrail.dev/problems/validation_failed",
+        type: "https://tokenledger.dev/problems/validation_failed",
         title: "validation_failed",
         status: 400,
         detail: "Request validation failed",
@@ -66,7 +85,7 @@ export async function buildServer(config: ApiConfig) {
         .status(error.httpStatus)
         .type("application/problem+json")
         .send({
-          type: `https://tokentrail.dev/problems/${error.code}`,
+          type: `https://tokenledger.dev/problems/${error.code}`,
           title: error.code,
           status: error.httpStatus,
           detail: error.message,
@@ -112,10 +131,10 @@ export async function buildServer(config: ApiConfig) {
   const superAdminGuard = makeSuperAdminGuard(superAdmins);
   await app.register(
     async (api) => {
-      api.get("/meta/version", async () => {
+api.get("/meta/version", async () => {
         const license = activeLicense();
         return {
-          name: "tokentrail",
+          name: "tokenledger",
           version: process.env.npm_package_version ?? "0.1.0",
           edition: license ? "enterprise" : "community",
           ...(license
@@ -143,10 +162,11 @@ export async function buildServer(config: ApiConfig) {
       registerInvitationsModule(api, {
         prisma,
         authenticate,
-        mailer: createMailer(config.SMTP_URL, logger, "TokenTrail <noreply@tokentrail.local>"),
+        mailer: createMailer(config.SMTP_URL, logger, "TokenLedger <noreply@tokenledger.local>"),
         publicBaseUrl: config.PUBLIC_BASE_URL,
       });
-      registerBudgetsModule(api, { prisma, redis, authenticate });
+registerBudgetsModule(api, { prisma, redis, authenticate });
+      registerPricingModule(api, { prisma, authenticate });
     },
     { prefix: "/api/v1" },
   );

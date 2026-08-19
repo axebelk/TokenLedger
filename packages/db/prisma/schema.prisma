@@ -1,4 +1,4 @@
-// TokenTrail schema — see docs/05-database-schema.md and docs/06-prisma-models.md.
+// TokenLedger schema — see docs/05-database-schema.md and docs/06-prisma-models.md.
 // Partitioning of UsageEvent/AuditLog, BRIN and partial-unique indexes are added
 // in raw-SQL migration steps; this file remains the source of truth for shape.
 

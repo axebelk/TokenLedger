@@ -1,4 +1,4 @@
-import type { Provider } from "@tokentrail/shared";
+import type { Provider } from "@tokenledger/shared";
 
 /** Prices in USD per 1M tokens, as decimal strings (money is never a float). */
 export interface PriceEntry {

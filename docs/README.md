@@ -1,9 +1,9 @@
-# TokenTrail — Design Documentation
+# TokenLedger — Design Documentation
 
-**TokenTrail** is an open-source AI Cost Governance and Usage Analytics Platform: developers point their AI SDKs at the TokenTrail Gateway instead of the provider, and the organization gets full attribution of AI spend by user, project, team, provider, and model — plus budgets, reports, and enterprise governance.
+**TokenLedger** is an open-source AI Cost Governance and Usage Analytics Platform: developers point their AI SDKs at the TokenLedger Gateway instead of the provider, and the organization gets full attribution of AI spend by user, project, team, provider, and model — plus budgets, reports, and enterprise governance.
 
 ```
-Developer ──tt_live_ key──▶ TokenTrail Gateway ──real key──▶ AI Provider
+Developer ──tt_live_ key──▶ TokenLedger Gateway ──real key──▶ AI Provider
                                    │
                                    ▼
                     usage events → cost engine → dashboards/budgets/reports

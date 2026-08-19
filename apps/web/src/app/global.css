@@ -1,4 +1,8 @@
-/* TokenTrail global styling — Notion-inspired design language.
+/* TokenLedger global styling — Notion-inspired design language.
+   NOTE: CSS class names use the `tt-` namespace (e.g. tt-sider, tt-brand,
+   tt-card). This is an opaque design-system prefix, NOT the brand initials —
+   it predates the rename and is kept for backward compat with every
+   component that references these classes. Don't "fix" it. */
    The design system lives here (signature/structural styles) and in
    src/app/theme.ts (AntD ConfigProvider tokens). Components carry only
    className — no raw hex, no magic values in JSX. Keep the CSS vars below

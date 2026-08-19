@@ -1,4 +1,4 @@
-# TokenTrail — Product Requirements Document (PRD)
+# TokenLedger — Product Requirements Document (PRD)
 
 **Version:** 1.0 · **Status:** Draft for review · **Owner:** Product/Architecture · **License model:** Open-core (Apache-2.0 community + commercial `ee/`)
 
@@ -6,9 +6,9 @@
 
 ## 1. Product Vision
 
-TokenTrail is the open-source control plane for AI spend. Every AI request an organization makes flows through the TokenTrail Gateway, which attributes it to a **user**, **project**, **team**, and **workspace**, prices it against a versioned model-pricing catalog, and turns it into governance data: dashboards, budgets, alerts, and reports.
+TokenLedger is the open-source control plane for AI spend. Every AI request an organization makes flows through the TokenLedger Gateway, which attributes it to a **user**, **project**, **team**, and **workspace**, prices it against a versioned model-pricing catalog, and turns it into governance data: dashboards, budgets, alerts, and reports.
 
-> **One-line pitch:** "Point your AI SDKs at TokenTrail instead of the provider, and you instantly know who is spending what, where, and why."
+> **One-line pitch:** "Point your AI SDKs at TokenLedger instead of the provider, and you instantly know who is spending what, where, and why."
 
 ### Why now
 - AI spend is the fastest-growing, least-attributed line item in engineering budgets.
@@ -35,10 +35,10 @@ TokenTrail is the open-source control plane for AI spend. Every AI request an or
 ## 3. Problems Solved
 
 1. **No attribution:** Provider consoles report per-API-key spend; organizations share keys, so spend is unattributable.
-2. **Key sprawl & leakage:** Raw provider keys are pasted into repos and laptops. TokenTrail issues revocable **virtual keys**; real provider keys live only in the vault.
-3. **Multi-provider chaos:** Seven providers × N models × changing prices = no single source of truth. TokenTrail normalizes usage and maintains a versioned pricing catalog.
+2. **Key sprawl & leakage:** Raw provider keys are pasted into repos and laptops. TokenLedger issues revocable **virtual keys**; real provider keys live only in the vault.
+3. **Multi-provider chaos:** Seven providers × N models × changing prices = no single source of truth. TokenLedger normalizes usage and maintains a versioned pricing catalog.
 4. **No guardrails:** Nothing stops a runaway agent from spending $30k overnight. Budgets alert (community) or hard-block at the gateway (enterprise).
-5. **No reporting:** Finance asks "cost per project this quarter" and gets a shrug. TokenTrail answers in one click or one scheduled email.
+5. **No reporting:** Finance asks "cost per project this quarter" and gets a shrug. TokenLedger answers in one click or one scheduled email.
 
 ## 4. Feature Requirements
 
@@ -74,7 +74,7 @@ TokenTrail is the open-source control plane for AI spend. Every AI request an or
 - Not a prompt/eval observability tool (no prompt content storage by default — metadata only; opt-in payload logging later).
 - Not an LLM router optimizing for quality (routing is credential-level failover, not model choice).
 - No fine-tuning/training cost tracking in v1 (inference only).
-- No agent framework; TokenTrail is infrastructure.
+- No agent framework; TokenLedger is infrastructure.
 
 ## 5. Key User Journeys
 
@@ -99,7 +99,7 @@ TokenTrail is the open-source control plane for AI spend. Every AI request an or
 
 ## 7. Competitive Landscape
 
-| | TokenTrail | LiteLLM | Helicone | Langfuse | Portkey |
+| | TokenLedger | LiteLLM | Helicone | Langfuse | Portkey |
 |---|---|---|---|---|---|
 | Org structure (teams/projects) | ✅ first-class | partial | ❌ | ❌ | partial |
 | Self-hosted, single compose | ✅ | ✅ | partial | ✅ | ❌ |
@@ -107,7 +107,7 @@ TokenTrail is the open-source control plane for AI spend. Every AI request an or
 | Finance-grade reporting/export | ✅ | ❌ | partial | ❌ | partial |
 | Prompt observability | ❌ (non-goal) | ❌ | ✅ | ✅ | ✅ |
 
-**Positioning:** LiteLLM is a router with admin features bolted on; observability tools attribute to traces, not to org structure. TokenTrail is *governance-first*: the org chart and the budget are the primary objects, the proxy is the sensor.
+**Positioning:** LiteLLM is a router with admin features bolted on; observability tools attribute to traces, not to org structure. TokenLedger is *governance-first*: the org chart and the budget are the primary objects, the proxy is the sensor.
 
 ## 8. Constraints & Assumptions
 - Prompt/response bodies are **not persisted** by default (privacy, storage); only usage metadata.

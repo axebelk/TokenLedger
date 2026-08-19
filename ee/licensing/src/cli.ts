@@ -3,8 +3,8 @@ import { generateLicenseKeyPair, signLicense, EE_FEATURES, type LicensePayload }
 
 /**
  * License tooling for vendors and self-hosters:
- *   pnpm --filter @tokentrail/ee-licensing license keygen <output-dir>
- *   pnpm --filter @tokentrail/ee-licensing license sign <private-key.pem> <licensee> [plan] [seats] [days]
+ *   pnpm --filter @tokenledger/ee-licensing license keygen <output-dir>
+ *   pnpm --filter @tokenledger/ee-licensing license sign <private-key.pem> <licensee> [plan] [seats] [days]
  *
  * Runtime then needs LICENSE_PUBLIC_KEY (contents of license-public.pem) and
  * LICENSE_KEY (the ttl_… string printed by sign).

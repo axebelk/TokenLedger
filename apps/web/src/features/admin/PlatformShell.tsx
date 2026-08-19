@@ -23,7 +23,7 @@ export function PlatformShell() {
       <Sider theme="light" width={224} className="tt-sider">
         <div className="tt-brand">
           <span className="tt-brand__mark" />
-          <span className="tt-brand__word">TokenTrail</span>
+          <span className="tt-brand__word">TokenLedger</span>
           <span className="tt-brand__badge">PLATFORM</span>
         </div>
         <Menu

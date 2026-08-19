@@ -1,4 +1,4 @@
-import type { UsageEventMessage } from "@tokentrail/queue";
+import type { UsageEventMessage } from "@tokenledger/queue";
 
 /**
  * Pure rollup aggregation: groups a batch of usage events into hourly/daily

@@ -1,5 +1,5 @@
-import type { Provider } from "@tokentrail/shared";
-import type { UsageEventMessage } from "@tokentrail/queue";
+import type { Provider } from "@tokenledger/shared";
+import type { UsageEventMessage } from "@tokenledger/queue";
 import type {
   CredentialStore,
   EventSink,
@@ -9,7 +9,7 @@ import type {
 } from "../types.js";
 
 /**
- * In-memory stores: used by the test suite and by `tokentrail dev` runs
+ * In-memory stores: used by the test suite and by `tokenledger dev` runs
  * without a database (the gateway logs a warning and authorizes nothing
  * unless keys are seeded explicitly).
  */

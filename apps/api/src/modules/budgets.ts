@@ -3,12 +3,12 @@ import { z } from "zod";
 import {
   BUDGET_PERIODS, BUDGET_SCOPES, ENFORCEMENTS,
   ConflictError, LicenseRequiredError, NotFoundError, ValidationError,
-} from "@tokentrail/shared";
-import { Prisma, type PrismaClient } from "@tokentrail/db";
-import { type Redis } from "@tokentrail/queue";
-import { entitled } from "@tokentrail/ee-licensing";
-import { budgetBlockKey } from "@tokentrail/ee-gateway";
-import { periodWindow } from "@tokentrail/ee-worker";
+} from "@tokenledger/shared";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
+import { type Redis } from "@tokenledger/queue";
+import { entitled } from "@tokenledger/ee-licensing";
+import { budgetBlockKey } from "@tokenledger/ee-gateway";
+import { periodWindow } from "@tokenledger/ee-worker";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const budgetSchema = z.object({

@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "@tokentrail/db";
+import { Prisma, type PrismaClient } from "@tokenledger/db";
 
 /**
  * Analytics explorer queries over the rollup tables (docs/07 §8). All dynamic

@@ -1,4 +1,4 @@
-import type { Redis } from "@tokentrail/queue";
+import type { Redis } from "@tokenledger/queue";
 
 export interface BudgetScopes {
   workspaceId: string;

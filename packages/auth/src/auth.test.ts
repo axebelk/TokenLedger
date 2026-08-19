@@ -1,13 +1,30 @@
 import { describe, expect, it } from "vitest";
 import { decryptSecret, encryptSecret, keyRingFromEnv } from "./crypto.js";
-import { mintVirtualKey, verifyTokenHash } from "./tokens.js";
+import { mintVirtualKey, sha256Hex, verifyTokenHash } from "./tokens.js";
 
 describe("virtual key minting", () => {
-  it("mints tt_live_ keys with 24 chars of base62 entropy", () => {
+  it("mints tl_live_ keys with 24 chars of base62 entropy", () => {
     const { token, hash, last4 } = mintVirtualKey();
-    expect(token).toMatch(/^tt_live_[0-9A-Za-z]{24}$/);
+    expect(token).toMatch(/^tl_live_[0-9A-Za-z]{24}$/);
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
     expect(last4).toBe(token.slice(-4));
+  });
+
+  // Legacy `tt_live_` keys minted before the TokenLedger rename must still
+  // hash to the same stored value, so the gateway's `extractKey` can accept
+  // both prefixes during the transition window. verifyTokenHash is
+  // prefix-agnostic — it hashes the raw token before comparing.
+  it("a legacy tt_live_ token verifies against its own pre-rename hash", () => {
+    const legacy = "tt_live_" + "A".repeat(24);
+    const preRenameStoredHash = sha256Hex(legacy);
+    // Pre-rename DB row: storedHash is sha256(legacy).
+    expect(verifyTokenHash(legacy, preRenameStoredHash)).toBe(true);
+    // A different legacy token with the same length must NOT verify.
+    const otherLegacy = "tt_live_" + "B".repeat(24);
+    expect(verifyTokenHash(otherLegacy, preRenameStoredHash)).toBe(false);
+    // And the new prefix must NOT verify against a legacy hash (no collision).
+    const newPrefix = "tl_live_" + "A".repeat(24);
+    expect(verifyTokenHash(newPrefix, preRenameStoredHash)).toBe(false);
   });
 
   it("verifies against the stored hash in constant time, rejects others", () => {

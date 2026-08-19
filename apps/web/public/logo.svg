@@ -1,4 +1,15 @@
 <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- TokenLedger brand mark: a stylized ledger book with a token dot in the spine.
+       Two-color palette — primary brand on the book, accent on the token dot. -->
   <rect width="120" height="120" rx="28" fill="#0075de"/>
-  <path d="M34 40 H86 V54 H67 V90 H53 V54 H34 Z" fill="#ffffff"/>
+  <!-- Book: front cover + back cover offset, spine seam implied by the inner rect. -->
+  <rect x="28" y="30" width="56" height="66" rx="4" fill="#ffffff"/>
+  <rect x="34" y="36" width="56" height="66" rx="4" fill="#ffffff" opacity="0.55"/>
+  <!-- Spine line and ledger rows. -->
+  <line x1="40" y1="48" x2="74" y2="48" stroke="#0075de" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="40" y1="60" x2="74" y2="60" stroke="#0075de" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+  <line x1="40" y1="72" x2="74" y2="72" stroke="#0075de" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+  <line x1="40" y1="84" x2="62" y2="84" stroke="#0075de" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+  <!-- Token dot: accent, sits on the spine. -->
+  <circle cx="84" cy="30" r="10" fill="#fbbf24"/>
 </svg>

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { mintVirtualKey, sha256Hex } from "@tokentrail/auth";
+import { mintVirtualKey, sha256Hex } from "@tokenledger/auth";
 import { buildServer, type GatewayServer } from "../src/server.js";
 import type { GatewayConfig } from "../src/config.js";
 import { CollectingSink, InMemoryCredentialStore, InMemoryKeyStore } from "../src/stores/memory.js";
@@ -89,7 +89,7 @@ describe("gateway proxy — non-streaming", () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.headers["x-tokentrail-request-id"]).toMatch(/^req_/);
+    expect(res.headers["x-tokenledger-request-id"]).toMatch(/^req_/);
     const body = res.json() as { content: { text: string }[]; usage: { input_tokens: number } };
     expect(body.content[0]?.text).toBe("Hello from mock"); // byte passthrough
     expect(body.usage.input_tokens).toBe(1000);

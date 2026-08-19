@@ -9,9 +9,9 @@ import {
   sha256Hex,
   signAccessToken,
   verifyPassword,
-} from "@tokentrail/auth";
-import { ConflictError, UnauthorizedError } from "@tokentrail/shared";
-import type { PrismaClient } from "@tokentrail/db";
+} from "@tokenledger/auth";
+import { ConflictError, UnauthorizedError } from "@tokenledger/shared";
+import type { PrismaClient } from "@tokenledger/db";
 import type { preHandlerHookHandler } from "fastify";
 
 const REFRESH_COOKIE = "tt_refresh";
@@ -104,19 +104,23 @@ export function registerAuthModule(app: FastifyInstance, opts: AuthModuleOptions
     });
   });
 
-  app.post("/auth/login", async (request, reply) => {
-    const body = loginSchema.parse(request.body);
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
-    // Same error for unknown email and wrong password — no account enumeration.
-    if (!user || user.status !== "ACTIVE" || !user.passwordHash) {
-      throw new UnauthorizedError("Invalid email or password");
-    }
-    if (!(await verifyPassword(body.password, user.passwordHash))) {
-      throw new UnauthorizedError("Invalid email or password");
-    }
-    const accessToken = await issueSession(reply, user, randomUUID(), request);
-    return { accessToken, user: publicUser(user) };
-  });
+  app.post(
+    "/auth/login",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const body = loginSchema.parse(request.body);
+      const user = await prisma.user.findUnique({ where: { email: body.email } });
+      // Same error for unknown email and wrong password — no account enumeration.
+      if (!user || user.status !== "ACTIVE" || !user.passwordHash) {
+        throw new UnauthorizedError("Invalid email or password");
+      }
+      if (!(await verifyPassword(body.password, user.passwordHash))) {
+        throw new UnauthorizedError("Invalid email or password");
+      }
+      const accessToken = await issueSession(reply, user, randomUUID(), request);
+      return { accessToken, user: publicUser(user) };
+    },
+  );
 
   app.post("/auth/refresh", async (request, reply) => {
     const presented = request.cookies[REFRESH_COOKIE];

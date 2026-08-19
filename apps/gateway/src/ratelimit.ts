@@ -1,4 +1,4 @@
-import type { Redis } from "@tokentrail/queue";
+import type { Redis } from "@tokenledger/queue";
 import type { RateLimitDecision, RateLimiter } from "./types.js";
 
 function windowInfo(nowMs: number): { window: number; retryAfterS: number } {

@@ -1,4 +1,4 @@
-# TokenTrail — System Architecture
+# TokenLedger — System Architecture
 
 **Version:** 1.0
 
@@ -6,11 +6,11 @@
 
 ## 1. Architecture Overview
 
-TokenTrail is split into a latency-critical **data plane** (Gateway) and a consistency-critical **control plane** (API + Worker + Console), sharing PostgreSQL and Redis. The split lets the hot path stay minimal and stateless while all heavy logic lives off the request path.
+TokenLedger is split into a latency-critical **data plane** (Gateway) and a consistency-critical **control plane** (API + Worker + Console), sharing PostgreSQL and Redis. The split lets the hot path stay minimal and stateless while all heavy logic lives off the request path.
 
 ```
                         ┌────────────────────────────────────────────────────────┐
-                        │                     TokenTrail                          │
+                        │                     TokenLedger                          │
                         │                                                        │
  Developer SDKs         │  ┌──────────────┐   proxy    ┌─────────────────────┐   │      AI Providers
  (Anthropic/OpenAI/…) ──┼─▶│   GATEWAY    │───────────▶│ provider adapters   │───┼──▶  Anthropic
@@ -140,7 +140,7 @@ Notes per provider:
 ## 6. Multi-Tenancy & Security Model
 
 - **Tenant boundary:** every table carries `workspaceId`; every Prisma query goes through a scoped client extension that injects `workspaceId` from request context (defense-in-depth against missing WHERE clauses).
-- **Secrets:** provider credentials AES-256-GCM (key from `TOKENTRAIL_MASTER_KEY`, supports key rotation via key-id prefix). VKs hashed (SHA-256) — they are high-entropy random, so no slow hash needed.
+- **Secrets:** provider credentials AES-256-GCM (key from `TOKENLEDGER_MASTER_KEY`, supports key rotation via key-id prefix). VKs hashed (SHA-256) — they are high-entropy random, so no slow hash needed.
 - **AuthN surfaces:** Console = JWT (15 min) + refresh rotation; Automation = PAT (`ttp_…`, hashed); Gateway = VK. Three token classes, three prefixes, zero overlap.
 - **AuthZ:** role matrix (SRS §2.10) enforced by route-level policy guards + query-level scope trimming for analytics.
 - **Transport:** TLS terminates at the fronting proxy (Caddy/nginx in compose); service-to-service on the compose network.

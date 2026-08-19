@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { baseEnv, databaseEnv, loadConfig, redisEnv, smtpEnv } from "@tokentrail/config";
+import { baseEnv, databaseEnv, loadConfig, redisEnv, smtpEnv } from "@tokenledger/config";
 
 const apiEnv = baseEnv
   .merge(databaseEnv)
@@ -9,7 +9,7 @@ const apiEnv = baseEnv
   .extend({
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     JWT_SECRET: z.string().min(32).optional(),
-    TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
+TOKENLEDGER_MASTER_KEY: z.string().min(32).optional(),
     LICENSE_KEY: z.string().optional(),
     LICENSE_PUBLIC_KEY: z.string().optional(),
     // Comma-separated emails granted instance-level super-admin (cross-workspace).

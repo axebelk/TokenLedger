@@ -211,6 +211,10 @@ export const membersApi = {
     api<Invitation & { acceptUrl: string }>(`/workspaces/${ws}/invitations/${id}/link`, { method: "POST" }),
   revokeInvite: (ws: string, id: string) =>
     api<{ ok: boolean }>(`/workspaces/${ws}/invitations/${id}`, { method: "DELETE" }),
+  updateMember: (ws: string, userId: string, body: { role: string }) =>
+    api<Member>(`/workspaces/${ws}/members/${userId}`, { method: "PATCH", body }),
+  removeMember: (ws: string, userId: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/members/${userId}`, { method: "DELETE" }),
 };
 
 export const inviteApi = {
@@ -235,3 +239,68 @@ export function formatUsd(value: string | number, compact = false): string {
     style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: digits,
   }).format(n);
 }
+
+// ── Pricing ────────────────────────────────────────────────────────────────
+
+export interface CatalogPrice {
+  id: string;
+  provider: Provider;
+  modelPattern: string;
+  inputPerMtok: string;
+  outputPerMtok: string;
+  cacheReadPerMtok: string;
+  cacheWritePerMtok: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  source: string;
+}
+export interface PriceOverride {
+  id: string;
+  workspaceId: string;
+  provider: Provider;
+  modelPattern: string;
+  inputPerMtok: string;
+  outputPerMtok: string;
+  cacheReadPerMtok: string;
+  cacheWritePerMtok: string;
+  createdAt: string;
+}
+export interface UnpricedModel {
+  provider: Provider;
+  model: string;
+  requests: number;
+  costLostUsd: string;
+}
+
+export interface CatalogPriceParams {
+  provider?: Provider;
+  at?: string;
+}
+
+export interface PriceOverrideInput {
+  provider: Provider;
+  modelPattern: string;
+  inputPerMtok: string;
+  outputPerMtok: string;
+  cacheReadPerMtok?: string;
+  cacheWritePerMtok?: string;
+}
+
+export const pricingApi = {
+  catalog: (p: CatalogPriceParams = {}) => {
+    const usp = new URLSearchParams();
+    if (p.provider) usp.set("provider", p.provider);
+    if (p.at) usp.set("at", p.at);
+    const qs = usp.toString();
+    return api<{ data: CatalogPrice[] }>(`/pricing/models${qs ? `?${qs}` : ""}`);
+  },
+  overrides: (ws: string) => api<{ data: PriceOverride[] }>(`/workspaces/${ws}/pricing/overrides`),
+  createOverride: (ws: string, body: PriceOverrideInput) =>
+    api<PriceOverride>(`/workspaces/${ws}/pricing/overrides`, { method: "POST", body }),
+  updateOverride: (ws: string, id: string, body: Partial<PriceOverrideInput>) =>
+    api<PriceOverride>(`/workspaces/${ws}/pricing/overrides/${id}`, { method: "PATCH", body }),
+  deleteOverride: (ws: string, id: string) =>
+    api<{ ok: boolean }>(`/workspaces/${ws}/pricing/overrides/${id}`, { method: "DELETE" }),
+  unpriced: (ws: string) =>
+    api<{ data: UnpricedModel[] }>(`/workspaces/${ws}/pricing/unpriced`),
+};

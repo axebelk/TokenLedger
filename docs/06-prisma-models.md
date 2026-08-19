@@ -1,4 +1,4 @@
-# TokenTrail — Prisma Models
+# TokenLedger — Prisma Models
 
 Lives at `packages/db/prisma/schema.prisma`. Partitioning of `UsageEvent`/`AuditLog` and BRIN/partial indexes are added in raw-SQL migration steps (Prisma models remain the source of truth for shape).
 
@@ -555,7 +555,7 @@ model License {
 2. Convert `usage_event` / `audit_log` to `PARTITION BY RANGE` + create current & next month partitions (worker maintains future ones).
 3. Partial unique index: `CREATE UNIQUE INDEX ON provider_credential(workspace_id, provider) WHERE is_default;`
 4. BRIN index on `usage_event(occurred_at)`.
-5. `REVOKE UPDATE, DELETE ON usage_event, audit_log FROM tokentrail_app;`
+5. `REVOKE UPDATE, DELETE ON usage_event, audit_log FROM tokenledger_app;`
 
 ## Tenancy guard (packages/db)
 

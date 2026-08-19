@@ -11,7 +11,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: TokenTrail version
+      label: TokenLedger version
       description: "Release you're on (e.g. `v0.1.0`, `main` commit SHA, or `latest`)."
       placeholder: "v0.1.0"
     validations:

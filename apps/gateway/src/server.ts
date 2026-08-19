@@ -1,11 +1,12 @@
 import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import { Counter } from "prom-client";
-import { keyRingFromEnv } from "@tokentrail/auth";
-import { createLogger, createMetricsRegistry } from "@tokentrail/telemetry";
-import { createRedis, pingRedis } from "@tokentrail/queue";
-import { entitled, initLicensing } from "@tokentrail/ee-licensing";
-import { RedisBudgetGuard } from "@tokentrail/ee-gateway";
+import rateLimit from "@fastify/rate-limit";
+import { keyRingFromEnv } from "@tokenledger/auth";
+import { createLogger, createMetricsRegistry } from "@tokenledger/telemetry";
+import { createRedis, pingRedis } from "@tokenledger/queue";
+import { entitled, initLicensing } from "@tokenledger/ee-licensing";
+import { RedisBudgetGuard } from "@tokenledger/ee-gateway";
 import type { GatewayConfig } from "./config.js";
 import type { GatewayDeps } from "./types.js";
 import { MAX_REQUEST_BODY } from "./proxy/core.js";
@@ -26,7 +27,7 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   const redis = createRedis(config.REDIS_URL);
 
   const eventsDropped = new Counter({
-    name: "tokentrail_events_dropped_total",
+    name: "tokenledger_events_dropped_total",
     help: "Usage events dropped after the retry buffer overflowed",
     registers: [registry],
   });
@@ -38,7 +39,7 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   }
 
   // ── Dependency wiring: PG-backed when configured, in-memory otherwise ────
-  const ring = config.TOKENTRAIL_MASTER_KEY ? keyRingFromEnv(config.TOKENTRAIL_MASTER_KEY) : null;
+  const ring = config.TOKENLEDGER_MASTER_KEY ? keyRingFromEnv(config.TOKENLEDGER_MASTER_KEY) : null;
   let deps: GatewayDeps;
   let pricingSource: PgPricingSource | undefined;
   const subscriber = createRedis(config.REDIS_URL); // pub/sub needs its own connection
@@ -89,8 +90,31 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
   app.removeAllContentTypeParsers();
   app.addContentTypeParser("*", (_request, payload, done) => done(null, payload));
 
+  // Per-IP rate limit protects the data plane from anonymous DoS — the
+  // per-virtual-key limiter (deps.rateLimiter) only fires AFTER key
+  // resolution, which means unauthenticated traffic could otherwise pin a
+  // worker on key validation + DB lookups.
+  //
+  // No `redis:` passed → plugin uses its default LocalStore (per-process).
+  // A future enhancement can pass `redis` here to share counters across
+  // gateway replicas; today this still blocks single-replica DoS and the
+  // per-VK limiter provides the cost-protection invariant.
+  await app.register(rateLimit, {
+    global: false, // apply per-route — /healthz, /readyz, /metrics stay open
+    nameSpace: "tl-gw-ip:",
+    max: 600, // 10 req/s burst headroom — well above legitimate traffic
+    timeWindow: "1 minute",
+    errorResponseBuilder: (_req, context) => ({
+      type: "https://tokenledger.dev/problems/rate_limited",
+      title: "rate_limited",
+      status: 429,
+      detail: `Too many requests; retry in ${context.after}.`,
+      retryAfterSeconds: Math.ceil(context.ttl / 1000),
+    }),
+  });
+
   app.addHook("onSend", async (request, reply) => {
-    reply.header("x-tokentrail-request-id", request.id);
+    reply.header("x-tokenledger-request-id", request.id);
   });
 
   app.get("/healthz", async () => ({ status: "ok" }));
@@ -112,10 +136,38 @@ export async function buildServer(config: GatewayConfig, overrides?: Partial<Gat
 
   // Unified OpenAI-compatible surface (model prefix routing + translation).
   // Registered before the native catch-all so /gw/v1/... isn't captured by it.
-  app.post("/gw/v1/chat/completions", makeUnifiedHandler(deps, logger));
+  app.post(
+    "/gw/v1/chat/completions",
+    { config: { rateLimit: { max: 600, timeWindow: "1 minute" } } },
+    makeUnifiedHandler(deps, logger),
+  );
+
+  // OpenAI-compatible model listing. Returns every (provider, pattern) pair in
+  // the currently-effective catalog, with one synthetic model id per pattern
+  // so clients can pick a model without knowing the (provider, pattern) split.
+  app.get(
+    "/gw/v1/models",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async () => {
+    const entries = deps.pricing.catalog?.() ?? [];
+    const seen = new Map<string, { id: string; provider: string; pattern: string }>();
+    for (const e of entries) {
+      const id = `${e.provider.toLowerCase()}/${e.modelPattern.replace(/\*$/, "")}`;
+      if (!seen.has(id)) seen.set(id, { id, provider: e.provider, pattern: e.modelPattern });
+    }
+    return {
+      object: "list",
+      data: [...seen.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    };
+  },
+  );
 
   // Native passthrough surface: /gw/{provider}/*
-  app.all("/gw/:provider/*", makeGatewayHandler(deps, logger));
+  app.all(
+    "/gw/:provider/*",
+    { config: { rateLimit: { max: 600, timeWindow: "1 minute" } } },
+    makeGatewayHandler(deps, logger),
+  );
 
   return { app, redis, subscriber, deps, pricingSource };
 }

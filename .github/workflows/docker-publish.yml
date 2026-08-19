@@ -1,6 +1,6 @@
 name: Publish Docker images
 
-# Builds the four TokenTrail service images and pushes them to the GitHub
+# Builds the four TokenLedger service images and pushes them to the GitHub
 # Container Registry (GHCR). Runs on version tags (v1.2.3), on pushes to main
 # (tagged `edge`), and on manual dispatch.
 on:
@@ -16,11 +16,14 @@ concurrency:
 env:
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # checkout the repo
       packages: write # required to push to GHCR
     strategy:
       fail-fast: false
@@ -35,16 +38,16 @@ jobs:
           - app: web
             dockerfile: apps/web/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Lowercase owner — GHCR image paths must be lowercase.
       - name: Compute image name
         id: img
-        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/tokentrail-${{ matrix.app }}" >> "$GITHUB_OUTPUT"
+        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/tokenledger-${{ matrix.app }}" >> "$GITHUB_OUTPUT"
 
       - name: Docker metadata (tags + labels)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ steps.img.outputs.name }}
           tags: |
@@ -55,17 +58,17 @@ jobs:
             type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: . # repo root — Dockerfiles COPY . . for the pnpm workspace
           file: ${{ matrix.dockerfile }}

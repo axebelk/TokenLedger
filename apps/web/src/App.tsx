@@ -12,6 +12,7 @@ import { TeamsPage } from "./features/teams/TeamsPage.js";
 import { TeamDetailPage } from "./features/teams/TeamDetailPage.js";
 import { ProvidersPage } from "./features/providers/ProvidersPage.js";
 import { MembersPage } from "./features/members/MembersPage.js";
+import { PricingPage } from "./features/pricing/PricingPage.js";
 import { AcceptInvitePage } from "./features/members/AcceptInvitePage.js";
 import { SetupPage } from "./features/setup/SetupPage.js";
 import { PlatformShell } from "./features/admin/PlatformShell.js";
@@ -47,6 +48,7 @@ export function App() {
             <Route path="teams/:teamId" element={<TeamDetailPage />} />
             <Route path="providers" element={<ProvidersPage />} />
             <Route path="members" element={<MembersPage />} />
+            <Route path="pricing" element={<PricingPage />} />
           </Route>
         </Route>
       </Routes>

@@ -1,8 +1,8 @@
 import type pg from "pg";
-import type { Provider } from "@tokentrail/shared";
-import { matchPrice, type PriceEntry } from "@tokentrail/pricing";
-import { PRICING_SEED } from "@tokentrail/db/seed";
-import type { Logger } from "@tokentrail/telemetry";
+import type { Provider } from "@tokenledger/shared";
+import { matchPrice, type PriceEntry } from "@tokenledger/pricing";
+import { PRICING_SEED } from "@tokenledger/db/seed";
+import type { Logger } from "@tokenledger/telemetry";
 import type { PricingSource } from "./types.js";
 
 function seedCatalog(): PriceEntry[] {
@@ -19,10 +19,14 @@ function seedCatalog(): PriceEntry[] {
 
 /** Bundled catalog seed — tests and database-less dev runs. */
 export class StaticPricingSource implements PricingSource {
-  private catalog = seedCatalog();
+  private catalogRows = seedCatalog();
 
   match(provider: Provider, model: string): PriceEntry | null {
-    return matchPrice(provider, model, this.catalog);
+    return matchPrice(provider, model, this.catalogRows);
+  }
+
+  catalog(): PriceEntry[] {
+    return [...this.catalogRows];
   }
 }
 
@@ -42,7 +46,7 @@ interface PriceRow {
  * the hot path; a failed refresh keeps the previous snapshot.
  */
 export class PgPricingSource implements PricingSource {
-  private catalog: PriceEntry[] = seedCatalog();
+  private catalogRows: PriceEntry[] = seedCatalog();
   private overridesByWorkspace = new Map<string, PriceEntry[]>();
   private timer: NodeJS.Timeout | undefined;
 
@@ -82,7 +86,7 @@ export class PgPricingSource implements PricingSource {
     ]);
 
     if (prices.rows.length > 0) {
-      this.catalog = prices.rows.map((r) => toEntry(r, "SYNC"));
+      this.catalogRows = prices.rows.map((r) => toEntry(r, "SYNC"));
     }
     const byWs = new Map<string, PriceEntry[]>();
     for (const row of overrides.rows) {
@@ -95,7 +99,12 @@ export class PgPricingSource implements PricingSource {
 
   match(provider: Provider, model: string, workspaceId?: string): PriceEntry | null {
     const overrides = workspaceId ? (this.overridesByWorkspace.get(workspaceId) ?? []) : [];
-    return matchPrice(provider, model, this.catalog, overrides);
+    return matchPrice(provider, model, this.catalogRows, overrides);
+  }
+
+  /** Snapshot of the currently-effective global catalog (one row per pattern). */
+  catalog(): PriceEntry[] {
+    return [...this.catalogRows];
   }
 }
 

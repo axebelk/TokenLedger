@@ -36,7 +36,7 @@ export type VerifyResult =
   | { valid: true; payload: LicensePayload }
   | { valid: false; reason: string };
 
-/** Replaced with the TokenTrail vendor public key in official release builds. */
+/** Replaced with the TokenLedger vendor public key in official release builds. */
 const EMBEDDED_PUBLIC_KEY_PEM = "";
 
 const PREFIX = "ttl_";

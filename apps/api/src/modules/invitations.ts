@@ -1,10 +1,11 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
 import {
-  ConflictError, NotFoundError, UnauthorizedError, ValidationError,
-} from "@tokentrail/shared";
-import { hashPassword, mintInviteToken, sha256Hex } from "@tokentrail/auth";
-import type { PrismaClient } from "@tokentrail/db";
+  ConflictError, ForbiddenError, hasMinimumRole, NotFoundError, UnauthorizedError, ValidationError,
+  type WorkspaceRole,
+} from "@tokenledger/shared";
+import { hashPassword, mintInviteToken, sha256Hex } from "@tokenledger/auth";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 import { inviteEmail, type Mailer } from "../lib/mailer.js";
 
@@ -20,6 +21,11 @@ const acceptSchema = z.object({
   // Required when the invited email has no account yet:
   name: z.string().min(1).max(100).optional(),
   password: z.string().min(8).max(200).optional(),
+});
+
+const updateMemberSchema = z.object({
+  // OWNER is omitted: only existing OWNERs can promote to OWNER via /transfer (Phase 2).
+  role: z.enum(["ADMIN", "MEMBER", "VIEWER"]),
 });
 
 interface InvitationsModuleOptions {
@@ -122,6 +128,76 @@ export function registerInvitationsModule(app: FastifyInstance, opts: Invitation
       where: { id, workspaceId: request.wsCtx!.workspaceId, acceptedAt: null },
     });
     if (deleted.count === 0) throw new NotFoundError("Invitation", id);
+    return { ok: true };
+  });
+
+  // ── Existing-member management ────────────────────────────────────────────
+
+  // Change a member's workspace role. ADMINs can freely reassign ADMIN/MEMBER/VIEWER.
+  // Demoting the last OWNER is refused (otherwise the workspace becomes unowned and
+  // an admin can lock everyone — including the original OWNER — out of admin actions).
+  // OWNER itself is not a permitted target role here; role escalation to OWNER
+  // intentionally goes through a separate "transfer ownership" flow (Phase 2).
+  app.patch("/workspaces/:ws/members/:userId", { preHandler: admin }, async (request) => {
+    const { userId } = request.params as { userId: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const { role } = updateMemberSchema.parse(request.body);
+
+    const target = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+    if (!target) throw new NotFoundError("Workspace member", userId);
+
+    if (target.role === "OWNER" && (role as WorkspaceRole) !== "OWNER") {
+      const ownerCount = await prisma.workspaceMember.count({
+        where: { workspaceId, role: "OWNER" },
+      });
+      if (ownerCount <= 1) {
+        throw new ValidationError(
+          "Cannot demote the last OWNER — promote another member to OWNER first",
+        );
+      }
+    }
+
+    const updated = await prisma.workspaceMember.update({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      data: { role },
+    });
+    return { ...target, role: updated.role };
+  });
+
+  // Remove a member from the workspace. Same last-OWNER protection as the PATCH
+  // route. Self-removal is allowed (any role can leave a workspace they belong to).
+  app.delete("/workspaces/:ws/members/:userId", { preHandler: member }, async (request) => {
+    const { userId } = request.params as { userId: string };
+    const workspaceId = request.wsCtx!.workspaceId;
+    const requesterId = request.user!.id;
+    const isSelf = userId === requesterId;
+
+    // Self-removal is always fine; admin-removal of someone else requires ADMIN.
+    if (!isSelf && !hasMinimumRole(request.wsCtx!.role, "ADMIN")) {
+      throw new ForbiddenError("Only workspace admins can remove other members");
+    }
+
+    const target = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+    if (!target) throw new NotFoundError("Workspace member", userId);
+
+    if (target.role === "OWNER") {
+      const ownerCount = await prisma.workspaceMember.count({
+        where: { workspaceId, role: "OWNER" },
+      });
+      if (ownerCount <= 1) {
+        throw new ValidationError(
+          "Cannot remove the last OWNER — transfer ownership before leaving",
+        );
+      }
+    }
+
+    await prisma.workspaceMember.delete({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
     return { ok: true };
   });
 

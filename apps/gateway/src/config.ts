@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { baseEnv, gatewayEnv, loadConfig, redisEnv } from "@tokentrail/config";
+import { baseEnv, gatewayEnv, loadConfig, redisEnv } from "@tokenledger/config";
 
 const env = baseEnv
   .merge(redisEnv)
@@ -9,7 +9,7 @@ const env = baseEnv
     // When set, VK auth + credentials come from Postgres (raw pg, cache in
     // front); otherwise the gateway runs on empty in-memory stores (dev only).
     DATABASE_URL: z.string().optional(),
-    TOKENTRAIL_MASTER_KEY: z.string().min(32).optional(),
+TOKENLEDGER_MASTER_KEY: z.string().min(32).optional(),
     LICENSE_KEY: z.string().optional(),
     LICENSE_PUBLIC_KEY: z.string().optional(),
   });

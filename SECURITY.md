@@ -30,7 +30,7 @@ PGP key for sensitive reports: *(request from security@axebelk.com)*
 
 | Version | Supported |
 |---------|-----------|
-| Latest release (see [Releases](https://github.com/axebelk/TokenTrail/releases)) | ✅ |
+| Latest release (see [Releases](https://github.com/axebelk/TokenLedger/releases)) | ✅ |
 | `main` branch | ✅ (best-effort; pin a release for stability) |
 | Older releases | ❌ — please upgrade |
 
@@ -40,7 +40,7 @@ These are the areas where issues have the highest impact and are most worth
 reviewing:
 
 - **Gateway auth + key resolution** — `apps/gateway/src/proxy/`, `apps/gateway/src/stores/`.
-  Never bypasses `tt_live_*` validation. Sealed credentials (`TOKENTRAIL_MASTER_KEY`)
+  Never bypasses `tt_live_*` validation. Sealed credentials (`TOKENLEDGER_MASTER_KEY`)
   are decrypted only inside the request handler and never logged.
 - **Token encryption at rest** — `packages/auth/src/crypto.ts`. Master-key
   rotation requires a complete re-encryption of stored provider credentials;
@@ -57,7 +57,7 @@ reviewing:
 These aren't bugs in the code, but they're the most common deployment
 mistakes that lead to incidents:
 
-- **Rotate the three secrets** (`POSTGRES_PASSWORD`, `TOKENTRAIL_MASTER_KEY`,
+- **Rotate the three secrets** (`POSTGRES_PASSWORD`, `TOKENLEDGER_MASTER_KEY`,
   `JWT_SECRET`) on **every** server they're installed on — they're the keys
   to everything, and once shared they're compromised forever.
 - **`SUPERADMIN_EMAILS`** is your operator allowlist. Treat additions and

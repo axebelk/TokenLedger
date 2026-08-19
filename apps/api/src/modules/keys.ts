@@ -7,10 +7,10 @@ import {
   ValidationError,
   hasMinimumRole,
   type Provider,
-} from "@tokentrail/shared";
-import { mintVirtualKey } from "@tokentrail/auth";
-import { CHANNELS, type Redis } from "@tokentrail/queue";
-import type { PrismaClient } from "@tokentrail/db";
+} from "@tokenledger/shared";
+import { mintVirtualKey } from "@tokenledger/auth";
+import { CHANNELS, type Redis } from "@tokenledger/queue";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const issueSchema = z.object({

@@ -1,4 +1,4 @@
-# Example nginx vhost for TokenTrail running behind an EXISTING host nginx
+# Example nginx vhost for TokenLedger running behind an EXISTING host nginx
 # (Path B in DEPLOY.md — used when this host already fronts other sites, so
 # the bundled Caddy container can't claim :80/:443).
 #
@@ -7,14 +7,14 @@
 #   api     → 127.0.0.1:4000
 #   gateway → 127.0.0.1:4100
 #
-# Copy to /etc/nginx/conf.d/tokentrail.conf (or sites-available/ + symlink),
+# Copy to /etc/nginx/conf.d/tokenledger.conf (or sites-available/ + symlink),
 # adjust server_name and cert paths, then:
 #   sudo nginx -t && sudo systemctl reload nginx
 #
 # ── THE ONE GOTCHA THAT WILL BITE YOU ────────────────────────────────────
 # nginx's `proxy_pass` silently REWRITES the request path when its target has
 # a trailing slash (or any URI component) *and* the `location` prefix doesn't
-# exactly match. TokenTrail's API only answers under /api/v1/... — if nginx
+# exactly match. TokenLedger's API only answers under /api/v1/... — if nginx
 # strips or mangles the "/api" prefix before forwarding, every request 404s
 # with something like:
 #   {"message":"Route POST://v1/auth/register not found", ...}
@@ -34,16 +34,16 @@
 
 server {
     listen 80;
-    server_name tokentrail.example.com;
+    server_name tokenledger.example.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name tokentrail.example.com;
+    server_name tokenledger.example.com;
 
-    ssl_certificate     /etc/letsencrypt/live/tokentrail.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/tokentrail.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/tokenledger.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tokenledger.example.com/privkey.pem;
 
     client_max_body_size 25m;
 

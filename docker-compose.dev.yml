@@ -1,16 +1,16 @@
-name: tokentrail-dev
+name: tokenledger-dev
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: tokentrail
+      POSTGRES_USER: tokenledger
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_DB: tokentrail
+      POSTGRES_DB: tokenledger
     ports: ["5432:5432"]
     volumes: [pgdata-dev:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tokentrail"]
+      test: ["CMD-SHELL", "pg_isready -U tokenledger"]
       interval: 5s
       timeout: 3s
       retries: 12

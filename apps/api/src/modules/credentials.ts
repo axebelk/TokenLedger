@@ -1,10 +1,10 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { request as undiciRequest } from "undici";
 import { z } from "zod";
-import { PROVIDERS, NotFoundError, ValidationError } from "@tokentrail/shared";
-import { encryptSecret, type MasterKeyRing } from "@tokentrail/auth";
-import { getAdapter, supportedProviders } from "@tokentrail/providers";
-import type { PrismaClient } from "@tokentrail/db";
+import { PROVIDERS, NotFoundError, ValidationError } from "@tokenledger/shared";
+import { encryptSecret, type MasterKeyRing } from "@tokenledger/auth";
+import { getAdapter, supportedProviders } from "@tokenledger/providers";
+import type { PrismaClient } from "@tokenledger/db";
 import { makeWorkspaceGuard } from "../plugins/guards.js";
 
 const createSchema = z.object({
@@ -57,7 +57,7 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
     }
     if (body.secret && !ring) {
       throw new ValidationError(
-        "TOKENTRAIL_MASTER_KEY is not configured — cannot store encrypted credentials",
+        "TOKENLEDGER_MASTER_KEY is not configured — cannot store encrypted credentials",
       );
     }
 
@@ -103,7 +103,7 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
     }
 
     const adapter = getAdapter(stored.provider);
-    const { decryptSecret } = await import("@tokentrail/auth");
+    const { decryptSecret } = await import("@tokenledger/auth");
     const secret =
       stored.encryptedSecret && ring
         ? decryptSecret(Buffer.from(stored.encryptedSecret), ring)
@@ -146,7 +146,7 @@ export function registerCredentialsModule(app: FastifyInstance, opts: CredModule
 
     if (body.secret && !ring) {
       throw new ValidationError(
-        "TOKENTRAIL_MASTER_KEY is not configured — cannot store encrypted credentials",
+        "TOKENLEDGER_MASTER_KEY is not configured — cannot store encrypted credentials",
       );
     }
     if (stored.provider === "OLLAMA" && body.baseUrl === null) {

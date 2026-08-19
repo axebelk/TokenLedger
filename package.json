@@ -1,8 +1,8 @@
 {
-  "name": "tokentrail",
+  "name": "tokenledger",
   "private": true,
   "version": "0.1.0",
-  "description": "TokenTrail — open-source AI cost governance and usage analytics platform",
+  "description": "TokenLedger — open-source AI cost governance and usage analytics platform",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -17,11 +17,11 @@
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
     "test": "turbo test",
-    "db:generate": "pnpm --filter @tokentrail/db generate",
-    "db:migrate": "pnpm --filter @tokentrail/db migrate:dev",
-    "db:deploy": "pnpm --filter @tokentrail/db migrate:deploy",
-    "db:seed": "pnpm --filter @tokentrail/db seed",
-    "db:studio": "pnpm --filter @tokentrail/db studio"
+    "db:generate": "pnpm --filter @tokenledger/db generate",
+    "db:migrate": "pnpm --filter @tokenledger/db migrate:dev",
+    "db:deploy": "pnpm --filter @tokenledger/db migrate:deploy",
+    "db:seed": "pnpm --filter @tokenledger/db seed",
+    "db:studio": "pnpm --filter @tokenledger/db studio"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

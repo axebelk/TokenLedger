@@ -1,5 +1,5 @@
 {
-  "name": "@tokentrail/ee-gateway",
+  "name": "@tokenledger/ee-gateway",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@tokentrail/queue": "workspace:*",
-    "@tokentrail/shared": "workspace:*"
+    "@tokenledger/queue": "workspace:*",
+    "@tokenledger/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

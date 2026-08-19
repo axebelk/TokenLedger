@@ -13,25 +13,28 @@ name: Release Please
 #
 # Full reference: https://github.com/googleapis/release-please
 #
-# Secrets: needs `contents: write` (for the PR), `pull-requests: write`
-# (for the issue), and `id-token: write` (for the OIDC publish job, even
-# though we don't publish from here yet — kept for parity with the docker
-# workflow).
+# Secrets: needs `contents: write` (for the release PR) and
+# `pull-requests: write` (for the release issue). No `id-token` here —
+# release-please doesn't publish signed artifacts.
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    # release-please needs write access to open the release PR (contents: write)
+    # and to attach a tracking issue (pull-requests: write). Scoped to this job
+    # only — no other workflow steps get more than read.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         id: release
         with:
           config-file: .release-please-config.json
@@ -53,9 +56,9 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           for app in api gateway worker web; do
             docker buildx imagetools create \
-              --tag "ghcr.io/${OWNER}/tokentrail-${app}:latest" \
-              --tag "ghcr.io/${OWNER}/tokentrail-${app}:${VER#v}" \
-              "ghcr.io/${OWNER}/tokentrail-${app}:${VER}"
+              --tag "ghcr.io/${OWNER}/tokenledger-${app}:latest" \
+              --tag "ghcr.io/${OWNER}/tokenledger-${app}:${VER#v}" \
+              "ghcr.io/${OWNER}/tokenledger-${app}:${VER}"
           done
         env:
           DOCKER_BUILDX_TOKEN: ${{ github.token }}

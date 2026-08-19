@@ -1,4 +1,4 @@
-import type { BudgetPeriod } from "@tokentrail/shared";
+import type { BudgetPeriod } from "@tokenledger/shared";
 
 export interface PeriodWindow {
   start: Date;

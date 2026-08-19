@@ -1,4 +1,4 @@
-import type { Provider } from "@tokentrail/shared";
+import type { Provider } from "@tokenledger/shared";
 
 /** Decrypted credential handed to an adapter for one upstream call. */
 export interface ResolvedCredential {
