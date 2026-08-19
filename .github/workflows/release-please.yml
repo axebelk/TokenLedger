@@ -48,6 +48,14 @@ jobs:
       # When a new release is published, re-tag the published GHCR images as
       # "latest" so users tracking :latest get the new release without having
       # to pin a tag. Skipped on the very first run (no published releases yet).
+      - name: Log in to GHCR
+        if: ${{ steps.release.outputs.release_created }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Retag GHCR images as :latest
         if: ${{ steps.release.outputs.release_created }}
         run: |
@@ -60,5 +68,3 @@ jobs:
               --tag "ghcr.io/${OWNER}/tokenledger-${app}:${VER#v}" \
               "ghcr.io/${OWNER}/tokenledger-${app}:${VER}"
           done
-        env:
-          DOCKER_BUILDX_TOKEN: ${{ github.token }}
