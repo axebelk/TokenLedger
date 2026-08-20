@@ -24,7 +24,7 @@
     "@tokenledger/telemetry": "workspace:*",
     "fastify": "^5.2.0",
     "nodemailer": "^9.0.5",
-    "prisma": "^6.5.0",
+    "prisma": "^7.9.1",
     "tsx": "^4.19.0",
     "undici": "^7.29.0",
     "zod": "^3.24.0"
