@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@tokenledger/shared": "workspace:*",
-    "jose": "^5.9.0"
+    "jose": "^6.2.9"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
