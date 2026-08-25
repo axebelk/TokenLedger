@@ -11,6 +11,7 @@ overrides:
   find-my-way: ">=9.8.0"
   nanoid: ">=3.3.16"
   postcss: ">=8.5.23"
+  deepmerge-ts: ">=8.0.0"
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
