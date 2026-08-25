@@ -26,7 +26,7 @@
     "nodemailer": "^9.0.5",
     "prisma": "^6.5.0",
     "tsx": "^4.19.0",
-    "undici": "^7.29.0",
+    "undici": "^8.10.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
