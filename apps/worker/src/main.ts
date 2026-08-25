@@ -72,15 +72,19 @@ const housekeepingWorker = createWorker(
 );
 housekeepingWorker.on("failed", (job, err) => logger.error({ err, name: job?.name }, "housekeeping job failed"));
 
-// Register the repeatable schedules idempotently (BullMQ dedupes by repeat key).
-await housekeepingQueue.add(HOUSEKEEPING.retention, {}, {
-  repeat: { pattern: "15 3 * * *" }, // daily 03:15 UTC
-  removeOnComplete: 30, removeOnFail: 30,
-});
-await housekeepingQueue.add(HOUSEKEEPING.reconcile, {}, {
-  repeat: { pattern: "45 3 * * *" }, // daily 03:45 UTC
-  removeOnComplete: 30, removeOnFail: 30,
-});
+// Register the repeatable schedules idempotently. BullMQ 6 replaced the old
+// `queue.add(name, data, { repeat })` shape with Job Schedulers — upsert is
+// itself idempotent (same schedulerId updates in place, doesn't duplicate).
+await housekeepingQueue.upsertJobScheduler(
+  HOUSEKEEPING.retention,
+  { pattern: "15 3 * * *" }, // daily 03:15 UTC
+  { name: HOUSEKEEPING.retention, opts: { removeOnComplete: 30, removeOnFail: 30 } },
+);
+await housekeepingQueue.upsertJobScheduler(
+  HOUSEKEEPING.reconcile,
+  { pattern: "45 3 * * *" }, // daily 03:45 UTC
+  { name: HOUSEKEEPING.reconcile, opts: { removeOnComplete: 30, removeOnFail: 30 } },
+);
 logger.info({ retentionDays: config.EVENT_RETENTION_DAYS }, "housekeeping scheduled (retention + reconcile daily)");
 
 // More BullMQ processors (notify, scheduled reports…) register here as they land.
