@@ -15,7 +15,7 @@
   "dependencies": {
     "@tokenledger/shared": "workspace:*",
     "bullmq": "^6.2.0",
-    "ioredis": "^5.4.0"
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
