@@ -5,7 +5,7 @@ packages:
 # Single ioredis instance across the workspace (bullmq pins its own otherwise,
 # which splits the Redis type and breaks Queue connection typing).
 overrides:
-  ioredis: ^5.11.1
+  ioredis: ^6.0.0
   # Security overrides for transitive deps (GitHub Dependabot alerts).
   fast-uri: ">=4.1.2"
   find-my-way: ">=9.8.0"
