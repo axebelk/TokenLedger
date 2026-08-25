@@ -3,7 +3,8 @@
    tt-card). This is an opaque design-system prefix, NOT the brand initials —
    it predates the rename and is kept for backward compat with every
    component that references these classes. Don't "fix" it. */
-   The design system lives here (signature/structural styles) and in
+
+/* The design system lives here (signature/structural styles) and in
    src/app/theme.ts (AntD ConfigProvider tokens). Components carry only
    className — no raw hex, no magic values in JSX. Keep the CSS vars below
    in sync with tokens.color in theme.ts. */
