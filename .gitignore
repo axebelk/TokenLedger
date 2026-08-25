@@ -23,3 +23,7 @@ Thumbs.db
 backups/
 exports/
 logs/
+
+# Local-only operator notes (repo/remote topology, tool coordination) —
+# never published to either the OSS or Enterprise remote.
+AGENTS.md
