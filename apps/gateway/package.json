@@ -24,11 +24,11 @@
     "pg": "^8.13.0",
     "prom-client": "^15.1.0",
     "tsx": "^4.19.0",
-    "undici": "^7.29.0",
+    "undici": "^8.10.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
+    "@types/node": "^26.2.0",
     "@types/pg": "^8.11.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
