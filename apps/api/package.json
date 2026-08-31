@@ -33,6 +33,6 @@
     "@types/node": "^26.2.0",
     "@types/nodemailer": "^8.0.1",
     "typescript": "^5.8.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.11"
   }
 }
